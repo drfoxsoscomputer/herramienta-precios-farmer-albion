@@ -21,10 +21,10 @@ from rich.text import Text
 from rich import box
 
 from constants import CITIES, COLORES_TIER, REF_MAP, ENCH_NOMBRES, ENCH_COLORS
-from api import get_prices, get_history
+from api import get_prices, get_history, get_history_raw
 from formatting import (format_price, _formatear_historial, color_precio, color_item,
-                        valores_positivos, mejor_ciudad, pct, color_signo)
-from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL
+                        valores_positivos, mejor_ciudad, pct, color_signo, market_summary)
+from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL, RESUMEN
 
 console = Console()
 
@@ -52,6 +52,47 @@ def _resena(texto, dim=True, c=None):
         else:
             c.print(f"  {texto}")
         c.print()
+
+
+def _panel_resumen(resumen, mostrar_ingrediente=False):
+    """Panel informativo con los datos de market_summary.
+
+    Solo datos objetivos (min/max, volumen, dia, ingrediente, diferencia
+    refinado - crudo). NUNCA recomienda acciones: el usuario decide.
+    mostrar_ingrediente=False oculta la linea de ingrediente (ej: recursos,
+    que no participan de salsas).
+    """
+    lineas = []
+    if resumen.get("sin_datos"):
+        lineas.append(f"  [dim]{RESUMEN['sin_datos']}[/]")
+    else:
+        lineas.append(f"  {RESUMEN['venta_min']}:  [bold]${format_price(resumen['min_venta'])}[/]")
+        lineas.append(f"  {RESUMEN['venta_max']}:  [bold]${format_price(resumen['max_venta'])}[/]")
+        if resumen.get("volumen_total", 0) > 0:
+            lineas.append(f"  {RESUMEN['volumen']}:  [bold]{resumen['volumen_total']:,}[/] uds")
+            if resumen.get("dia_mayor_venta"):
+                lineas.append(
+                    f"  {RESUMEN['dia_mayor']}:  [bold]{resumen['dia_mayor_venta']}[/] "
+                    f"({resumen['volumen_dia']:,} uds)"
+                )
+    if mostrar_ingrediente:
+        if resumen.get("es_ingrediente") and resumen.get("recetas"):
+            lineas.append(f"  {RESUMEN['ingrediente']}:  [bold]{', '.join(resumen['recetas'])}[/]")
+        else:
+            lineas.append(f"  [dim]{RESUMEN['no_ingrediente']}[/]")
+    if resumen.get("diferencia_refinado") is not None:
+        diff = resumen["diferencia_refinado"]
+        signo = "+" if diff >= 0 else ""
+        lineas.append(f"  {RESUMEN['diferencia']}:  [bold]{signo}{diff:,}[/]")
+    if not lineas:
+        lineas.append("  [dim]Sin datos de mercado[/]")
+    console.print(Panel(
+        "\n".join(lineas),
+        title=f"[bold]{RESUMEN['titulo']}[/]",
+        border_style="green",
+        box=box.ROUNDED,
+        title_align="left",
+    ))
 
 
 class _RawControl(Control):
@@ -544,9 +585,9 @@ def menu_pesca(config):
             reiniciar()
         else:
             nombre, item_id, trozos, tipo = peces[idx]
-            ver_detalle_pez(nombre, item_id, trozos, tipo)
+            ver_detalle_pez(nombre, item_id, trozos, tipo, config)
 
-def ver_detalle_pez(nombre, item_id, trozos, tipo):
+def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
     limpiar_pantalla()
     tier, color = info_tier(item_id)
     tipo_txt = "Raro" if tipo == "raro" else "Comun"
@@ -624,70 +665,16 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo):
             title_align="left",
         ))
 
-    # ─── Determinar recomendacion ──────────────────────────────
-    mejor_entero = {"ciudad": "", "precio": 0}
-    mejor_picado = {"ciudad": "", "precio": 0}
-    for city in CITIES:
-        e, p = precios.get(city, (0, 0))
-        if e > mejor_entero["precio"]:
-            mejor_entero = {"ciudad": city, "precio": e}
-        if p > mejor_picado["precio"]:
-            mejor_picado = {"ciudad": city, "precio": p}
-
-    # Señales para la decision
-    motivos = []
-    rinde_picado = (mejor_picado["precio"] > 0 and mejor_entero["precio"] > 0
-                    and mejor_picado["precio"] > mejor_entero["precio"])
-    vol_bajo = vol_entero_total > 0 and vol_entero_total < 200
-    sin_entero = mejor_entero["precio"] == 0
-
-    if vol_bajo:
-        motivos.append("bajo volumen de venta entero")
-    if rinde_picado:
-        motivos.append("mejor ganancia picandolo")
-    if sin_entero:
-        motivos.append("sin ofertas de compra entero")
-
-    if motivos:
-        decision = "picar"
-        motivo = " + ".join(motivos)
-    elif mejor_entero["precio"] > 0:
-        decision = "entero"
-        motivo = "Buena demanda y mejor precio entero"
-    else:
-        decision = "picar"
-        motivo = "Sin datos de venta entero"
-
-    # Panel de recomendacion
-    if decision == "picar":
-        icon = "[bold yellow]\u2702\ufe0f PICARLO[/]"
-        if vol_bajo or sin_entero:
-            icon = "[bold red]\u2702\ufe0f PICARLO[/]"
-    else:
-        icon = "[bold green]\U0001f37d\ufe0f VENDER ENTERO[/]"
-
-    if mejor_entero["precio"] > 0 and mejor_picado["precio"] > 0:
-        diff = abs(mejor_entero["precio"] - mejor_picado["precio"])
-        if decision == "entero":
-            diff_txt = f"${diff:,} mas vendiendolo ENTERO"
-        else:
-            diff_txt = f"${diff:,} mas picandolo"
-
-        rec_txt = (
-            f"  {icon}\n\n"
-            f"  [dim]{motivo}[/]\n\n"
-            f"  Opcion A: ENTERO en [bold]{mejor_entero['ciudad']}[/]  ->  ${mejor_entero['precio']:,}\n"
-            f"  Opcion B: PICADO en [bold]{mejor_picado['ciudad']}[/]  ->  ${mejor_picado['precio']:,}\n\n"
-            f"  -> Ganancia: {diff_txt}"
-        )
-    elif mejor_entero["precio"] > 0:
-        rec_txt = f"  {icon}\n\n  [dim]{motivo}[/]\n\n  ENTERO en [bold]{mejor_entero['ciudad']}[/] (${mejor_entero['precio']:,})"
-    elif mejor_picado["precio"] > 0:
-        rec_txt = f"  {icon}\n\n  [dim]{motivo}[/]\n\n  PICADO en [bold]{mejor_picado['ciudad']}[/] (${mejor_picado['precio']:,})"
-    else:
-        rec_txt = f"  {icon}\n\n  [dim]Sin datos de precios actuales.[/]"
-
-    console.print(Panel(rec_txt, title="[bold]Recomendacion[/]", border_style="green", box=box.HEAVY, title_align="left"))
+    # ─── Resumen de mercado (informativo, sin recomendaciones) ──
+    # get_history_raw comparte URL con get_history (arriba): cache hit,
+    # no hay peticiones extra a la API.
+    hist_raw = get_history_raw(item_id)
+    recetas_config = None
+    if config:
+        recetas_config = config.get("insumos_pesca", {}).get("items", {})
+    resumen = market_summary(prices, hist_raw, item_id, recetas_config)
+    console.print()
+    _panel_resumen(resumen, mostrar_ingrediente=recetas_config is not None)
     console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
     _pausa_volver()
 
@@ -904,6 +891,16 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         txt = "\n".join(lineas).rstrip()
 
     console.print(Panel(txt, title="[bold]Observacion[/]", border_style="green", box=box.HEAVY, title_align="left"))
+
+    # ─── Resumen de mercado (informativo, sin recomendaciones) ──
+    # get_history_raw comparte URL con get_history del panel de arriba:
+    # cache hit, sin peticiones extra. En modo crudo no hay par crudo/
+    # refinado en precios -> diferencia_refinado queda en None (no se muestra).
+    item_vista = refinado_id if modo == "refinado" else crudo_id
+    hist_raw = get_history_raw(item_vista)
+    resumen = market_summary(prices_map, hist_raw, item_vista)
+    console.print()
+    _panel_resumen(resumen)
     console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
     _pausa_volver()
 
@@ -1271,6 +1268,14 @@ def ver_detalle_insumo(nombre, item_id, config):
             box=box.ROUNDED,
             title_align="left",
         ))
+
+    # ── Resumen de mercado (informativo, sin recomendaciones) ──
+    # get_history_raw comparte URL con get_history de arriba: cache hit.
+    hist_raw = get_history_raw(item_id)
+    recetas_config = config.get("insumos_pesca", {}).get("items", {})
+    resumen = market_summary(precios_grp, hist_raw, item_id, recetas_config)
+    console.print()
+    _panel_resumen(resumen, mostrar_ingrediente=True)
 
     console.print()
     console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")

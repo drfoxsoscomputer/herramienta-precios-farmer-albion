@@ -35,6 +35,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - Protocolo de continuidad global activo (AGENTS.md global): ESTADO.md + CodeGraph + responsabilidad de subagentes
 - **SDD inicializado (2026-08-01)**: modo hybrid (openspec + engram); strict_tdd: false (no hay pytest); artifact store "both"; PRs force-chained; review budget 400 líneas
 - **SDD v2 — BASE COMPLETADA (2026-08-01, slice apply 1)**: baterias de tests migradas de Temp a `tests/` (regression_fase2.py 12 secciones + test_api_cache.py 4 tests); `test_command` en openspec/config.yaml (apply y verify) apunta a `tests/`; ambos PASS desde la raiz con `python -X utf8`
+- **SDD v2 — WORK UNIT 2 COMPLETADO (2026-08-01, slice apply 2, PR 2)**: fase A (10 items T8 en albion_config.json + tests/test_recursos_t8.py) y fase B (get_history_raw en api.py, market_summary pura en formatting.py, resumen "Resumen de mercado" en los 3 detalles de menus.py, copy neutral en textos.py, tests/test_market_summary.py). El bloque de recomendacion picar/entero fue ELIMINADO. `test_command` ahora corre las 4 baterias; 340 lineas de diff (dentro del presupuesto ~345)
 - Contexto persistido en Engram: `sdd-init/albion` (#153), `sdd/albion/testing-capabilities` (#154), `skill-registry` (#155)
 - CodeGraph indexado en `.codegraph/` (6 archivos, 105 nodos) — regenerar con `codegraph update` tras cambios estructurales
 - Selector con flechas + numeros en todos los menus (grid 2 columnas en pesca/recursos)
@@ -49,8 +50,8 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 ## Pendientes / ToDo
 - [ ] CAMBIO SDD v2 (acordado con el usuario, preflight: interactive/both/force-chained/400):
   - [x] BASE: baterias de tests migradas de Temp a `tests/` (PR 1) — slice apply 1 completado y verificado (12 + 4 PASS)
-  - [ ] A: T8 en los 5 recursos (fibra/madera/cuero/mineral/piedra x crudo+refinado = 10 items)
-  - [ ] B: regla ingredientes — no recomendar picar pescados clave (recetas del config + volumen)
+  - [x] A: T8 en los 5 recursos (fibra/madera/cuero/mineral/piedra x crudo+refinado = 10 items) — slice apply 2 (PR 2), tests/test_recursos_t8.py PASS
+  - [x] B: market_summary — resumen informativo sin recomendaciones (min/max, volumen, dia mayor venta, ingrediente, diferencia refinado) — slice apply 2 (PR 2), tests/test_market_summary.py PASS
   - [ ] C: buscador global desde menu principal (ignora acentos, busca en API, listado seleccionable)
   - [ ] D: historial de precios (get_history existe sin uso) + favoritos — definir en detalle al llegar
   - [ ] E: cambio de servidor (west=America / east=Europa / asia=Asia; hoy fijo en constants.py)
@@ -60,6 +61,8 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - [x] Specs creadas (5: test-migration, resource-t8, market-summary, global-search, server-selection) en openspec/specs/
 - [x] Diseño técnico materializado por el orquestador (design.md) — el sub-agente sdd-design fallo 2x (reporte vacio)
 - [x] CAUSA RAIZ arreglada: agentes sdd-* usaban modelo north-mini-code-free (reportes vacios) → cambiados a deepseek-v4-flash-free en ~/.config/opencode/opencode.json (PENDIENTE: reiniciar opencode para aplicar)
+- [x] Work unit 2 (A: T8 + B: market_summary) COMPLETADO y VERIFICADO (2026-08-01): 10 items T8 en albion_config.json, get_history_raw en api.py, market_summary pura en formatting.py, bloque de recomendacion picar/entero ELIMINADO de menus.py, tests nuevos (test_recursos_t8.py 6 PASS, test_market_summary.py 7 PASS); 4/4 baterias verdes
+- [x] Nombres T8 verificados contra base de datos del juego (albioncore/albiondatabase): corregidos 5 (Cáñamo fantasma/Tela barroca, Cuero fortificado, Mármol/Bloque de mármol); 5 correctos desde el aplicador (madera blanca, adamantium, piel resistente)
 - [ ] Probar la herramienta en la practica con pescados (usuario)
 - [ ] Continuar con recursos: fibra, madera, cuero, mineral (usuario probara)
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
@@ -88,5 +91,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 ## Tests / verificacion
 - Bateria en `tests/regression_fase2.py` (12 secciones: limpiar_pantalla, _mover_cursor, _menu_seleccion, E2E menu_principal, pausa, confirmar, hints, diferenciador, colores T6 truecolor)
 - API: `tests/test_api_cache.py` (4 tests: cache TTL, 429 backoff)
-- Correr desde la raiz: `python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py`
+- T8: `tests/test_recursos_t8.py` (6 checks: tier T8 en 5 recursos, 4 claves, prefijo T8_, pares, simetria T4/T6, nombres)
+- Market summary: `tests/test_market_summary.py` (7 tests: pez con datos, tiburon sin ventas, dia mayor 7d/3d, ingrediente si/no, diferencia refinado, sin peticiones extra)
+- Correr desde la raiz: `python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py`
 - Origenes intactos en `C:\Users\DrFox\AppData\Local\Temp\opencode\` (rollback seguro: los originales no se tocaron; los nuevos archivos en tests/ son copias con el import de sys.path relativo a la raiz)

@@ -12,9 +12,9 @@ RESENAS_MENU = {
         "y el volumen de los ultimos 7 dias."
     ),
     "pesca": (
-        "Elige un pez. Veras su precio por ciudad: venderlo ENTERO "
-        "vs PICADO (cada pez da trozos al picar), la mejor ciudad para "
-        "vender y el volumen de los ultimos 7 dias."
+        "Elige un pez. Veras su precio por ciudad, el volumen de los "
+        "ultimos 7 dias, el dia de mayor venta y si es ingrediente de "
+        "alguna salsa."
     ),
     "recursos": (
         "Elige un tier. Los tiers bajos (T2/T3) muestran crudo y refinado "
@@ -31,8 +31,9 @@ RESENAS_MENU = {
 # ─── Resenas de las pantallas de detalle (bajo el titulo) ──────
 RESENAS_DETALLE = {
     "pez": (
-        "Entero vs picado: picado = precio del trozo x trozos que da. "
-        "Verde = mejor precio de esa ciudad, rojo = el peor, N/D = sin datos."
+        "Verde = mejor precio de esa ciudad, rojo = el peor, N/D = sin "
+        "datos. Abajo, el resumen de mercado muestra datos objetivos, "
+        "sin recomendaciones."
     ),
     "recurso": (
         "Tiers bajos: comprar barato es bueno (verde). Tiers altos: vender "
@@ -44,6 +45,19 @@ RESENAS_DETALLE = {
         "que paga mas. Compara fabricar la salsa vs vender los insumos "
         "por separado."
     ),
+}
+
+# ─── Resumen de mercado (datos objetivos, sin recomendaciones) ─
+RESUMEN = {
+    "titulo": "Resumen de mercado",
+    "venta_min": "Venta min",
+    "venta_max": "Venta max",
+    "volumen": "Volumen 7 dias",
+    "dia_mayor": "Dia de mayor venta",
+    "ingrediente": "Es ingrediente de",
+    "no_ingrediente": "No es ingrediente de ninguna salsa",
+    "diferencia": "Diferencia refinado - crudo",
+    "sin_datos": "Sin datos de venta",
 }
 
 # ─── Leyenda de colores por tier (con su color real) ───────────

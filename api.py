@@ -113,3 +113,25 @@ def get_history(item_ids):
             avg_price = round(weighted_sum / total_vol)
             result.setdefault(iid, {})[city] = {"volumen": total_vol, "avg_price": avg_price}
         return result
+
+
+def get_history_raw(item_id, servidor="west"):
+    """Historial 7d CRUDO: entries con data[] de {timestamp, item_count, avg_price}.
+
+    A diferencia de get_history (que agrega por ciudad y DESCARTA los
+    timestamps), esto devuelve la lista cruda de la API, solo de las
+    ciudades configuradas y sin sumar: market_summary necesita el detalle
+    timestamp a timestamp para agrupar por dia de la semana.
+
+    El parametro `servidor` queda aceptado para la fase de seleccion de
+    servidor; hoy la URL base es fija (HISTORY_BASE, subdominio west).
+    """
+    if isinstance(item_id, str):
+        item_id = [item_id]
+    items_str = ",".join(item_id)
+    url = HISTORY_BASE.format(item=items_str)
+    data = _fetch_json(url, timeout=15)
+    if data is None:
+        return []
+    # Mismo universo que get_history: solo ciudades configuradas.
+    return [e for e in data if e.get("location") in CITIES]

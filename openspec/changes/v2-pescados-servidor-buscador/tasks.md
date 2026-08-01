@@ -42,24 +42,24 @@ Nota de alcance: FASE D (historial extendido + favoritos) queda FUERA de este ca
 
 ## Phase A: Recursos T8 en albion_config.json
 
-- [ ] 2.1 Agregar los 10 items T8 (5 pares crudo+refinado) a `recursos.*.tiers` de `albion_config.json` siguiendo el esquema REAL `{crudo, refinado, nombre, refinado_nombre}` (NO la terminología izquierda/derecha de la spec): T8_FIBER/T8_CLOTH, T8_WOOD/T8_PLANKS, T8_HIDE/T8_LEATHER, T8_ORE/T8_METALBAR, T8_ROCK/T8_STONEBLOCK; nombres reales en español verificados contra la convención T2-T7 existente.
+- [x] 2.1 Agregar los 10 items T8 (5 pares crudo+refinado) a `recursos.*.tiers` de `albion_config.json` siguiendo el esquema REAL `{crudo, refinado, nombre, refinado_nombre}` (NO la terminología izquierda/derecha de la spec): T8_FIBER/T8_CLOTH, T8_WOOD/T8_PLANKS, T8_HIDE/T8_LEATHER, T8_ORE/T8_METALBAR, T8_ROCK/T8_STONEBLOCK; nombres reales en español verificados contra la convención T2-T7 existente.
   - Archivos: `albion_config.json` · Criterio: JSON válido (`json.load` sin error); cada tier T8 tiene las 4 claves; `ver_recurso` muestra T8 crudo y refinado separados (T4+ ya se separa por código) · Dep: ninguna
-- [ ] 2.2 Crear `tests/test_recursos_t8.py` que valide la estructura de los 10 items T8 (claves requeridas, ids con prefijo T8_, simetría crudo/refinado) contra el esquema de los items T4/T6 existentes.
+- [x] 2.2 Crear `tests/test_recursos_t8.py` que valide la estructura de los 10 items T8 (claves requeridas, ids con prefijo T8_, simetría crudo/refinado) contra el esquema de los items T4/T6 existentes.
   - Archivos: `tests/test_recursos_t8.py`, `albion_config.json` · Criterio: pasa con `python -X utf8 tests/test_recursos_t8.py` desde la raíz · Dep: 2.1, 1.1
 
 ## Phase B: market_summary (resumen informativo)
 
-- [ ] 3.1 En `api.py`, agregar `get_history_raw(item_id, servidor="west")` que devuelva los entries crudos (timestamp + item_count por ciudad) sin agregar; NO modificar `get_history` (el código actual descarta los timestamps).
+- [x] 3.1 En `api.py`, agregar `get_history_raw(item_id, servidor="west")` que devuelva los entries crudos (timestamp + item_count por ciudad) sin agregar; NO modificar `get_history` (el código actual descarta los timestamps).
   - Archivos: `api.py` · Criterio: devuelve lista de dicts con `data[].timestamp` e `item_count`; `get_history` existente intacto (test_api_cache pasa) · Dep: 1.3
-- [ ] 3.2 En `formatting.py`, agregar `market_summary(precios, historial, item, recetas_config=None)` → dict estructurado: `min_venta/max_venta`, `volumen_total`, `dia_mayor_venta` + `volumen_dia` (agrupar por `strftime("%A")`, solo días con datos), `es_ingrediente` + `recetas` (item_id como clave en `insumos_pesca.items[*].receta`), `diferencia_refinado` (solo recursos), `sin_datos`.
+- [x] 3.2 En `formatting.py`, agregar `market_summary(precios, historial, item, recetas_config=None)` → dict estructurado: `min_venta/max_venta`, `volumen_total`, `dia_mayor_venta` + `volumen_dia` (agrupar por `strftime("%A")`, solo días con datos), `es_ingrediente` + `recetas` (item_id como clave en `insumos_pesca.items[*].receta`), `diferencia_refinado` (solo recursos), `sin_datos`.
   - Archivos: `formatting.py` · Criterio: función pura sin red/impresión; tiburón (todo 0) → `sin_datos=True`; historial de 3 días → solo esos días · Dep: 3.1
-- [ ] 3.3 En `menus.py`, reemplazar el bloque de recomendación picar/entero de `ver_detalle_pez` (líneas 627-692) por la sección "Resumen de mercado" usando `market_summary` (sin recomendaciones de acción).
+- [x] 3.3 En `menus.py`, reemplazar el bloque de recomendación picar/entero de `ver_detalle_pez` (líneas 627-692) por la sección "Resumen de mercado" usando `market_summary` (sin recomendaciones de acción).
   - Archivos: `menus.py` · Criterio: pez con datos muestra min/max/volumen/día/ingrediente; tiburón muestra "sin datos de venta" sin romper · Dep: 3.2
-- [ ] 3.4 En `menus.py`, integrar el resumen en `_ver_detalle_recurso` (modo crudo/refinado, con `diferencia_refinado` como dato) y en `ver_detalle_insumo`.
+- [x] 3.4 En `menus.py`, integrar el resumen en `_ver_detalle_recurso` (modo crudo/refinado, con `diferencia_refinado` como dato) y en `ver_detalle_insumo`.
   - Archivos: `menus.py` · Criterio: el detalle de recurso e insumo muestran el resumen debajo del panel existente · Dep: 3.2
-- [ ] 3.5 En `textos.py`, actualizar `RESENAS_MENU["pesca"]` y `RESENAS_DETALLE["pez"]`: ya no "entero vs picado", sí resumen informativo (datos objetivos, sin recomendación).
+- [x] 3.5 En `textos.py`, actualizar `RESENAS_MENU["pesca"]` y `RESENAS_DETALLE["pez"]`: ya no "entero vs picado", sí resumen informativo (datos objetivos, sin recomendación).
   - Archivos: `textos.py` · Criterio: copy en español neutro sin verbos de recomendación · Dep: 3.3
-- [ ] 3.6 Crear `tests/test_market_summary.py` con los escenarios de la spec: pez con datos (min/max visibles), tiburón sin ventas ("sin datos de venta"), día de mayor venta con 7d y con 3d (solo días reales), ingrediente sí/no, formato sin peticiones extra a la API.
+- [x] 3.6 Crear `tests/test_market_summary.py` con los escenarios de la spec: pez con datos (min/max visibles), tiburón sin ventas ("sin datos de venta"), día de mayor venta con 7d y con 3d (solo días reales), ingrediente sí/no, formato sin peticiones extra a la API.
   - Archivos: `tests/test_market_summary.py` · Criterio: pasa con `python -X utf8 tests/test_market_summary.py` · Dep: 3.2
 
 ## Phase C: Buscador global

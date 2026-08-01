@@ -2,117 +2,471 @@
   "_comentario": "Podes eliminar los peces que no pesques. Si borras de mas, copia albion_config.full.json encima de este archivo para restaurar la lista completa.",
   "pescados": {
     "_T1": "--- Tier 1 ---",
-    "Corvina com\u00fan T1": { "id": "T1_FISH_FRESHWATER_ALL_COMMON", "trozos": 1, "tipo": "comun" },
-    "Arenque com\u00fan T1": { "id": "T1_FISH_SALTWATER_ALL_COMMON", "trozos": 1, "tipo": "comun" },
+    "Corvina común T1": {
+      "id": "T1_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 1,
+      "tipo": "comun"
+    },
+    "Arenque común T1": {
+      "id": "T1_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 1,
+      "tipo": "comun"
+    },
     "_T2": "--- Tier 2 ---",
-    "Carpa rayada T2": { "id": "T2_FISH_FRESHWATER_ALL_COMMON", "trozos": 2, "tipo": "comun" },
-    "Caballa rayada T2": { "id": "T2_FISH_SALTWATER_ALL_COMMON", "trozos": 2, "tipo": "comun" },
+    "Carpa rayada T2": {
+      "id": "T2_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 2,
+      "tipo": "comun"
+    },
+    "Caballa rayada T2": {
+      "id": "T2_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 2,
+      "tipo": "comun"
+    },
     "_T3": "--- Tier 3 ---",
-    "Perca de Albion T3": { "id": "T3_FISH_FRESHWATER_ALL_COMMON", "trozos": 3, "tipo": "comun" },
-    "Soya suave T3": { "id": "T3_FISH_SALTWATER_ALL_COMMON", "trozos": 3, "tipo": "comun" },
-    "Almeja verdosa T3": { "id": "T3_FISH_FRESHWATER_SWAMP_RARE", "trozos": 10, "tipo": "raro" },
-    "Anguila de agua verdosa T3": { "id": "T3_FISH_FRESHWATER_FOREST_RARE", "trozos": 10, "tipo": "raro" },
-    "Calamar de aguas poco profundas T3": { "id": "T3_FISH_SALTWATER_ALL_RARE", "trozos": 10, "tipo": "raro" },
-    "Cangrejo de r\u00edo abajo T3": { "id": "T3_FISH_FRESHWATER_STEPPE_RARE", "trozos": 10, "tipo": "raro" },
-    "Locha pedregosa T3": { "id": "T3_FISH_FRESHWATER_HIGHLANDS_RARE", "trozos": 10, "tipo": "raro" },
-    "Ojo muerto de las sierras T3": { "id": "T3_FISH_FRESHWATER_MOUNTAIN_RARE", "trozos": 10, "tipo": "raro" },
-    "Pargo de niebla blanca T3": { "id": "T3_FISH_FRESHWATER_AVALON_RARE", "trozos": 10, "tipo": "raro" },
+    "Perca de Albion T3": {
+      "id": "T3_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 3,
+      "tipo": "comun"
+    },
+    "Soya suave T3": {
+      "id": "T3_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 3,
+      "tipo": "comun"
+    },
+    "Almeja verdosa T3": {
+      "id": "T3_FISH_FRESHWATER_SWAMP_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Anguila de agua verdosa T3": {
+      "id": "T3_FISH_FRESHWATER_FOREST_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Calamar de aguas poco profundas T3": {
+      "id": "T3_FISH_SALTWATER_ALL_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Cangrejo de río abajo T3": {
+      "id": "T3_FISH_FRESHWATER_STEPPE_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Locha pedregosa T3": {
+      "id": "T3_FISH_FRESHWATER_HIGHLANDS_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Ojo muerto de las sierras T3": {
+      "id": "T3_FISH_FRESHWATER_MOUNTAIN_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
+    "Pargo de niebla blanca T3": {
+      "id": "T3_FISH_FRESHWATER_AVALON_RARE",
+      "trozos": 10,
+      "tipo": "raro"
+    },
     "_T4": "--- Tier 4 ---",
-    "Pique azul T4": { "id": "T4_FISH_FRESHWATER_ALL_COMMON", "trozos": 4, "tipo": "comun" },
-    "Bacalao azul T4": { "id": "T4_FISH_SALTWATER_ALL_COMMON", "trozos": 4, "tipo": "comun" },
+    "Pique azul T4": {
+      "id": "T4_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 4,
+      "tipo": "comun"
+    },
+    "Bacalao azul T4": {
+      "id": "T4_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 4,
+      "tipo": "comun"
+    },
     "_T5": "--- Tier 5 ---",
-    "Trucha pintada T5": { "id": "T5_FISH_FRESHWATER_ALL_COMMON", "trozos": 6, "tipo": "comun" },
-    "Pez lobo pintado T5": { "id": "T5_FISH_SALTWATER_ALL_COMMON", "trozos": 6, "tipo": "comun" },
-    "Almeja de aguas turbias T5": { "id": "T5_FISH_FRESHWATER_SWAMP_RARE", "trozos": 20, "tipo": "raro" },
-    "Anguila rojiza T5": { "id": "T5_FISH_FRESHWATER_FOREST_RARE", "trozos": 20, "tipo": "raro" },
-    "Cangrejo de r\u00edo T5": { "id": "T5_FISH_FRESHWATER_STEPPE_RARE", "trozos": 20, "tipo": "raro" },
-    "Locha de agua corriente T5": { "id": "T5_FISH_FRESHWATER_HIGHLANDS_RARE", "trozos": 20, "tipo": "raro" },
-    "Ojo muerto de las monta\u00f1as T5": { "id": "T5_FISH_FRESHWATER_MOUNTAIN_RARE", "trozos": 20, "tipo": "raro" },
-    "Pargo de niebla ligera T5": { "id": "T5_FISH_FRESHWATER_AVALON_RARE", "trozos": 20, "tipo": "raro" },
-    "Pulpo de aguas medias T5": { "id": "T5_FISH_SALTWATER_ALL_RARE", "trozos": 20, "tipo": "raro" },
+    "Trucha pintada T5": {
+      "id": "T5_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 6,
+      "tipo": "comun"
+    },
+    "Pez lobo pintado T5": {
+      "id": "T5_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 6,
+      "tipo": "comun"
+    },
+    "Almeja de aguas turbias T5": {
+      "id": "T5_FISH_FRESHWATER_SWAMP_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Anguila rojiza T5": {
+      "id": "T5_FISH_FRESHWATER_FOREST_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Cangrejo de río T5": {
+      "id": "T5_FISH_FRESHWATER_STEPPE_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Locha de agua corriente T5": {
+      "id": "T5_FISH_FRESHWATER_HIGHLANDS_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Ojo muerto de las montañas T5": {
+      "id": "T5_FISH_FRESHWATER_MOUNTAIN_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Pargo de niebla ligera T5": {
+      "id": "T5_FISH_FRESHWATER_AVALON_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
+    "Pulpo de aguas medias T5": {
+      "id": "T5_FISH_SALTWATER_ALL_RARE",
+      "trozos": 20,
+      "tipo": "raro"
+    },
     "_T6": "--- Tier 6 ---",
-    "Lucio brillante T6": { "id": "T6_FISH_FRESHWATER_ALL_COMMON", "trozos": 8, "tipo": "comun" },
-    "Salm\u00f3n fuerte T6": { "id": "T6_FISH_SALTWATER_ALL_COMMON", "trozos": 8, "tipo": "comun" },
+    "Lucio brillante T6": {
+      "id": "T6_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 8,
+      "tipo": "comun"
+    },
+    "Salmón fuerte T6": {
+      "id": "T6_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 8,
+      "tipo": "comun"
+    },
     "_T7": "--- Tier 7 ---",
-    "Pez gato bocudo T7": { "id": "T7_FISH_FRESHWATER_ALL_COMMON", "trozos": 10, "tipo": "comun" },
-    "At\u00fan azulado T7": { "id": "T7_FISH_SALTWATER_ALL_COMMON", "trozos": 10, "tipo": "comun" },
-    "Locha de trueno T7": { "id": "T7_FISH_FRESHWATER_HIGHLANDS_RARE", "trozos": 30, "tipo": "raro" },
-    "Almeja de pantano negro T7": { "id": "T7_FISH_FRESHWATER_SWAMP_RARE", "trozos": 30, "tipo": "raro" },
-    "Anguila de agua podrida T7": { "id": "T7_FISH_FRESHWATER_FOREST_RARE", "trozos": 30, "tipo": "raro" },
-    "Cangrejo de pozo T7": { "id": "T7_FISH_FRESHWATER_STEPPE_RARE", "trozos": 30, "tipo": "raro" },
-    "Kraken de agua profunda T7": { "id": "T7_FISH_SALTWATER_ALL_RARE", "trozos": 30, "tipo": "raro" },
-    "Ojo muerto de dos picos T7": { "id": "T7_FISH_FRESHWATER_MOUNTAIN_RARE", "trozos": 30, "tipo": "raro" },
-    "Pargo de niebla pura T7": { "id": "T7_FISH_FRESHWATER_AVALON_RARE", "trozos": 30, "tipo": "raro" },
+    "Pez gato bocudo T7": {
+      "id": "T7_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 10,
+      "tipo": "comun"
+    },
+    "Atún azulado T7": {
+      "id": "T7_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 10,
+      "tipo": "comun"
+    },
+    "Locha de trueno T7": {
+      "id": "T7_FISH_FRESHWATER_HIGHLANDS_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Almeja de pantano negro T7": {
+      "id": "T7_FISH_FRESHWATER_SWAMP_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Anguila de agua podrida T7": {
+      "id": "T7_FISH_FRESHWATER_FOREST_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Cangrejo de pozo T7": {
+      "id": "T7_FISH_FRESHWATER_STEPPE_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Kraken de agua profunda T7": {
+      "id": "T7_FISH_SALTWATER_ALL_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Ojo muerto de dos picos T7": {
+      "id": "T7_FISH_FRESHWATER_MOUNTAIN_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
+    "Pargo de niebla pura T7": {
+      "id": "T7_FISH_FRESHWATER_AVALON_RARE",
+      "trozos": 30,
+      "tipo": "raro"
+    },
     "_T8": "--- Tier 8 ---",
-    "Esturi\u00f3n de r\u00edo T8": { "id": "T8_FISH_FRESHWATER_ALL_COMMON", "trozos": 14, "tipo": "comun" },
-    "Pez espada de acero T8": { "id": "T8_FISH_SALTWATER_ALL_COMMON", "trozos": 14, "tipo": "comun" },
-    "Tibur\u00f3n T8": { "id": "T8_FISH_SALTWATER_ALL_BOSS_SHARK", "trozos": 200, "tipo": "raro" }
+    "Esturión de río T8": {
+      "id": "T8_FISH_FRESHWATER_ALL_COMMON",
+      "trozos": 14,
+      "tipo": "comun"
+    },
+    "Pez espada de acero T8": {
+      "id": "T8_FISH_SALTWATER_ALL_COMMON",
+      "trozos": 14,
+      "tipo": "comun"
+    },
+    "Tiburón T8": {
+      "id": "T8_FISH_SALTWATER_ALL_BOSS_SHARK",
+      "trozos": 200,
+      "tipo": "raro"
+    }
   },
   "recursos": {
     "fibra": {
       "nombre": "Fibra",
       "tiers": {
-        "T2": { "crudo": "T2_FIBER", "refinado": "T2_CLOTH", "nombre": "Algodón", "refinado_nombre": "Tela simple" },
-        "T3": { "crudo": "T3_FIBER", "refinado": "T3_CLOTH", "nombre": "Lino", "refinado_nombre": "Tela pulcra" },
-        "T4": { "crudo": "T4_FIBER", "refinado": "T4_CLOTH", "nombre": "Cáñamo", "refinado_nombre": "Tela fina" },
-        "T5": { "crudo": "T5_FIBER", "refinado": "T5_CLOTH", "nombre": "Duranta", "refinado_nombre": "Tela decorada" },
-        "T6": { "crudo": "T6_FIBER", "refinado": "T6_CLOTH", "nombre": "Algodón ambarino", "refinado_nombre": "Tela suntuosa" },
-        "T7": { "crudo": "T7_FIBER", "refinado": "T7_CLOTH", "nombre": "Lino solar", "refinado_nombre": "Tela opulenta" }
+        "T2": {
+          "crudo": "T2_FIBER",
+          "refinado": "T2_CLOTH",
+          "nombre": "Algodón",
+          "refinado_nombre": "Tela simple"
+        },
+        "T3": {
+          "crudo": "T3_FIBER",
+          "refinado": "T3_CLOTH",
+          "nombre": "Lino",
+          "refinado_nombre": "Tela pulcra"
+        },
+        "T4": {
+          "crudo": "T4_FIBER",
+          "refinado": "T4_CLOTH",
+          "nombre": "Cáñamo",
+          "refinado_nombre": "Tela fina"
+        },
+        "T5": {
+          "crudo": "T5_FIBER",
+          "refinado": "T5_CLOTH",
+          "nombre": "Duranta",
+          "refinado_nombre": "Tela decorada"
+        },
+        "T6": {
+          "crudo": "T6_FIBER",
+          "refinado": "T6_CLOTH",
+          "nombre": "Algodón ambarino",
+          "refinado_nombre": "Tela suntuosa"
+        },
+        "T7": {
+          "crudo": "T7_FIBER",
+          "refinado": "T7_CLOTH",
+          "nombre": "Lino solar",
+          "refinado_nombre": "Tela opulenta"
+        },
+        "T8": {
+          "crudo": "T8_FIBER",
+          "refinado": "T8_CLOTH",
+          "nombre": "Cáñamo fantasma",
+          "refinado_nombre": "Tela barroca"
+        }
       }
     },
     "madera": {
       "nombre": "Madera",
       "tiers": {
-        "T2": { "crudo": "T2_WOOD", "refinado": "T2_PLANKS", "nombre": "Troncos de abedul", "refinado_nombre": "Tablas de abedul" },
-        "T3": { "crudo": "T3_WOOD", "refinado": "T3_PLANKS", "nombre": "Troncos de castaño", "refinado_nombre": "Tablas de castaño" },
-        "T4": { "crudo": "T4_WOOD", "refinado": "T4_PLANKS", "nombre": "Troncos de pino", "refinado_nombre": "Tablas de pino" },
-        "T5": { "crudo": "T5_WOOD", "refinado": "T5_PLANKS", "nombre": "Troncos de cedro", "refinado_nombre": "Tablas de cedro" },
-        "T6": { "crudo": "T6_WOOD", "refinado": "T6_PLANKS", "nombre": "Troncos de roble rojo", "refinado_nombre": "Tablas de roble rojo" },
-        "T7": { "crudo": "T7_WOOD", "refinado": "T7_PLANKS", "nombre": "Troncos de corteza ceniza", "refinado_nombre": "Tablas de cortezaceniza" }
+        "T2": {
+          "crudo": "T2_WOOD",
+          "refinado": "T2_PLANKS",
+          "nombre": "Troncos de abedul",
+          "refinado_nombre": "Tablas de abedul"
+        },
+        "T3": {
+          "crudo": "T3_WOOD",
+          "refinado": "T3_PLANKS",
+          "nombre": "Troncos de castaño",
+          "refinado_nombre": "Tablas de castaño"
+        },
+        "T4": {
+          "crudo": "T4_WOOD",
+          "refinado": "T4_PLANKS",
+          "nombre": "Troncos de pino",
+          "refinado_nombre": "Tablas de pino"
+        },
+        "T5": {
+          "crudo": "T5_WOOD",
+          "refinado": "T5_PLANKS",
+          "nombre": "Troncos de cedro",
+          "refinado_nombre": "Tablas de cedro"
+        },
+        "T6": {
+          "crudo": "T6_WOOD",
+          "refinado": "T6_PLANKS",
+          "nombre": "Troncos de roble rojo",
+          "refinado_nombre": "Tablas de roble rojo"
+        },
+        "T7": {
+          "crudo": "T7_WOOD",
+          "refinado": "T7_PLANKS",
+          "nombre": "Troncos de corteza ceniza",
+          "refinado_nombre": "Tablas de cortezaceniza"
+        },
+        "T8": {
+          "crudo": "T8_WOOD",
+          "refinado": "T8_PLANKS",
+          "nombre": "Troncos de madera blanca",
+          "refinado_nombre": "Tablas de madera blanca"
+        }
       }
     },
     "cuero": {
       "nombre": "Cuero",
       "tiers": {
-        "T2": { "crudo": "T2_HIDE", "refinado": "T2_LEATHER", "nombre": "Piel dura", "refinado_nombre": "Cuero firme" },
-        "T3": { "crudo": "T3_HIDE", "refinado": "T3_LEATHER", "nombre": "Piel fina", "refinado_nombre": "Cuero grueso" },
-        "T4": { "crudo": "T4_HIDE", "refinado": "T4_LEATHER", "nombre": "Piel media", "refinado_nombre": "Cuero trabajado" },
-        "T5": { "crudo": "T5_HIDE", "refinado": "T5_LEATHER", "nombre": "Piel pesada", "refinado_nombre": "Cuero curtido" },
-        "T6": { "crudo": "T6_HIDE", "refinado": "T6_LEATHER", "nombre": "Piel fornida", "refinado_nombre": "Cuero endurecido" },
-        "T7": { "crudo": "T7_HIDE", "refinado": "T7_LEATHER", "nombre": "Piel gruesa", "refinado_nombre": "Cuero reforzado" }
+        "T2": {
+          "crudo": "T2_HIDE",
+          "refinado": "T2_LEATHER",
+          "nombre": "Piel dura",
+          "refinado_nombre": "Cuero firme"
+        },
+        "T3": {
+          "crudo": "T3_HIDE",
+          "refinado": "T3_LEATHER",
+          "nombre": "Piel fina",
+          "refinado_nombre": "Cuero grueso"
+        },
+        "T4": {
+          "crudo": "T4_HIDE",
+          "refinado": "T4_LEATHER",
+          "nombre": "Piel media",
+          "refinado_nombre": "Cuero trabajado"
+        },
+        "T5": {
+          "crudo": "T5_HIDE",
+          "refinado": "T5_LEATHER",
+          "nombre": "Piel pesada",
+          "refinado_nombre": "Cuero curtido"
+        },
+        "T6": {
+          "crudo": "T6_HIDE",
+          "refinado": "T6_LEATHER",
+          "nombre": "Piel fornida",
+          "refinado_nombre": "Cuero endurecido"
+        },
+        "T7": {
+          "crudo": "T7_HIDE",
+          "refinado": "T7_LEATHER",
+          "nombre": "Piel gruesa",
+          "refinado_nombre": "Cuero reforzado"
+        },
+        "T8": {
+          "crudo": "T8_HIDE",
+          "refinado": "T8_LEATHER",
+          "nombre": "Piel resistente",
+          "refinado_nombre": "Cuero fortificado"
+        }
       }
     },
     "mineral": {
       "nombre": "Mineral",
       "tiers": {
-        "T2": { "crudo": "T2_ORE", "refinado": "T2_METALBAR", "nombre": "Mineral de cobre", "refinado_nombre": "Lingote de cobre" },
-        "T3": { "crudo": "T3_ORE", "refinado": "T3_METALBAR", "nombre": "Mineral de estaño", "refinado_nombre": "Lingote de bronce" },
-        "T4": { "crudo": "T4_ORE", "refinado": "T4_METALBAR", "nombre": "Mineral de hierro", "refinado_nombre": "Barra de hierro" },
-        "T5": { "crudo": "T5_ORE", "refinado": "T5_METALBAR", "nombre": "Mineral de titanio", "refinado_nombre": "Barra de titanio" },
-        "T6": { "crudo": "T6_ORE", "refinado": "T6_METALBAR", "nombre": "Mineral de runita", "refinado_nombre": "Barra de runita" },
-        "T7": { "crudo": "T7_ORE", "refinado": "T7_METALBAR", "nombre": "Mineral de meteorito", "refinado_nombre": "Barra de meteorito" }
+        "T2": {
+          "crudo": "T2_ORE",
+          "refinado": "T2_METALBAR",
+          "nombre": "Mineral de cobre",
+          "refinado_nombre": "Lingote de cobre"
+        },
+        "T3": {
+          "crudo": "T3_ORE",
+          "refinado": "T3_METALBAR",
+          "nombre": "Mineral de estaño",
+          "refinado_nombre": "Lingote de bronce"
+        },
+        "T4": {
+          "crudo": "T4_ORE",
+          "refinado": "T4_METALBAR",
+          "nombre": "Mineral de hierro",
+          "refinado_nombre": "Barra de hierro"
+        },
+        "T5": {
+          "crudo": "T5_ORE",
+          "refinado": "T5_METALBAR",
+          "nombre": "Mineral de titanio",
+          "refinado_nombre": "Barra de titanio"
+        },
+        "T6": {
+          "crudo": "T6_ORE",
+          "refinado": "T6_METALBAR",
+          "nombre": "Mineral de runita",
+          "refinado_nombre": "Barra de runita"
+        },
+        "T7": {
+          "crudo": "T7_ORE",
+          "refinado": "T7_METALBAR",
+          "nombre": "Mineral de meteorito",
+          "refinado_nombre": "Barra de meteorito"
+        },
+        "T8": {
+          "crudo": "T8_ORE",
+          "refinado": "T8_METALBAR",
+          "nombre": "Mineral de adamantium",
+          "refinado_nombre": "Barra de adamantium"
+        }
       }
     },
     "piedra": {
       "nombre": "Piedra",
       "tiers": {
-        "T2": { "crudo": "T2_ROCK", "refinado": "T2_STONEBLOCK", "nombre": "Piedra caliza", "refinado_nombre": "Bloque de piedra caliza" },
-        "T3": { "crudo": "T3_ROCK", "refinado": "T3_STONEBLOCK", "nombre": "Arenisca", "refinado_nombre": "Bloque de arenisca" },
-        "T4": { "crudo": "T4_ROCK", "refinado": "T4_STONEBLOCK", "nombre": "Travertino", "refinado_nombre": "Bloque de travertino" },
-        "T5": { "crudo": "T5_ROCK", "refinado": "T5_STONEBLOCK", "nombre": "Granito", "refinado_nombre": "Bloque de granito" },
-        "T6": { "crudo": "T6_ROCK", "refinado": "T6_STONEBLOCK", "nombre": "Pizarra", "refinado_nombre": "Bloque de pizarra" },
-        "T7": { "crudo": "T7_ROCK", "refinado": "T7_STONEBLOCK", "nombre": "Basalto", "refinado_nombre": "Bloque de basalto" }
+        "T2": {
+          "crudo": "T2_ROCK",
+          "refinado": "T2_STONEBLOCK",
+          "nombre": "Piedra caliza",
+          "refinado_nombre": "Bloque de piedra caliza"
+        },
+        "T3": {
+          "crudo": "T3_ROCK",
+          "refinado": "T3_STONEBLOCK",
+          "nombre": "Arenisca",
+          "refinado_nombre": "Bloque de arenisca"
+        },
+        "T4": {
+          "crudo": "T4_ROCK",
+          "refinado": "T4_STONEBLOCK",
+          "nombre": "Travertino",
+          "refinado_nombre": "Bloque de travertino"
+        },
+        "T5": {
+          "crudo": "T5_ROCK",
+          "refinado": "T5_STONEBLOCK",
+          "nombre": "Granito",
+          "refinado_nombre": "Bloque de granito"
+        },
+        "T6": {
+          "crudo": "T6_ROCK",
+          "refinado": "T6_STONEBLOCK",
+          "nombre": "Pizarra",
+          "refinado_nombre": "Bloque de pizarra"
+        },
+        "T7": {
+          "crudo": "T7_ROCK",
+          "refinado": "T7_STONEBLOCK",
+          "nombre": "Basalto",
+          "refinado_nombre": "Bloque de basalto"
+        },
+        "T8": {
+          "crudo": "T8_ROCK",
+          "refinado": "T8_STONEBLOCK",
+          "nombre": "Mármol",
+          "refinado_nombre": "Bloque de mármol"
+        }
       }
     }
   },
   "insumos_pesca": {
     "nombre": "Insumos pesca",
     "items": {
-      "Algas": { "id": "T1_SEAWEED" },
-      "Carne de pescado": { "id": "T1_FISHCHOPS" },
-      "Salsa básica": { "id": "T1_FISHSAUCE_LEVEL1", "receta": { "T1_FISHCHOPS": 15, "T1_SEAWEED": 1 } },
-      "Salsa elegante": { "id": "T1_FISHSAUCE_LEVEL2", "receta": { "T1_FISHCHOPS": 45, "T1_SEAWEED": 3 } },
-      "Salsa especial": { "id": "T1_FISHSAUCE_LEVEL3", "receta": { "T1_FISHCHOPS": 135, "T1_SEAWEED": 9 } }
+      "Algas": {
+        "id": "T1_SEAWEED"
+      },
+      "Carne de pescado": {
+        "id": "T1_FISHCHOPS"
+      },
+      "Salsa básica": {
+        "id": "T1_FISHSAUCE_LEVEL1",
+        "receta": {
+          "T1_FISHCHOPS": 15,
+          "T1_SEAWEED": 1
+        }
+      },
+      "Salsa elegante": {
+        "id": "T1_FISHSAUCE_LEVEL2",
+        "receta": {
+          "T1_FISHCHOPS": 45,
+          "T1_SEAWEED": 3
+        }
+      },
+      "Salsa especial": {
+        "id": "T1_FISHSAUCE_LEVEL3",
+        "receta": {
+          "T1_FISHCHOPS": 135,
+          "T1_SEAWEED": 9
+        }
+      }
     }
   }
 }
