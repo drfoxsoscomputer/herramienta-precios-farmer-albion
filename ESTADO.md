@@ -29,6 +29,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 ## Estado actual
 - Protocolo de continuidad global activo (AGENTS.md global): ESTADO.md + CodeGraph + responsabilidad de subagentes
 - **SDD inicializado (2026-08-01)**: modo hybrid (openspec + engram); strict_tdd: false (no hay pytest); artifact store "both"; PRs force-chained; review budget 400 líneas
+- **SDD v2 — BASE COMPLETADA (2026-08-01, slice apply 1)**: baterias de tests migradas de Temp a `tests/` (regression_fase2.py 12 secciones + test_api_cache.py 4 tests); `test_command` en openspec/config.yaml (apply y verify) apunta a `tests/`; ambos PASS desde la raiz con `python -X utf8`
 - Contexto persistido en Engram: `sdd-init/albion` (#153), `sdd/albion/testing-capabilities` (#154), `skill-registry` (#155)
 - CodeGraph indexado en `.codegraph/` (6 archivos, 105 nodos) — regenerar con `codegraph update` tras cambios estructurales
 - Selector con flechas + numeros en todos los menus (grid 2 columnas en pesca/recursos)
@@ -42,7 +43,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 
 ## Pendientes / ToDo
 - [ ] CAMBIO SDD v2 (acordado con el usuario, preflight: interactive/both/force-chained/400):
-  - [ ] BASE: migrar baterias de tests de Temp a `tests/` en el repo
+  - [x] BASE: baterias de tests migradas de Temp a `tests/` (PR 1) — slice apply 1 completado y verificado (12 + 4 PASS)
   - [ ] A: T8 en los 5 recursos (fibra/madera/cuero/mineral/piedra x crudo+refinado = 10 items)
   - [ ] B: regla ingredientes — no recomendar picar pescados clave (recetas del config + volumen)
   - [ ] C: buscador global desde menu principal (ignora acentos, busca en API, listado seleccionable)
@@ -61,6 +62,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 ## Decisiones recientes
 - CAUSA RAIZ sub-agentes: sdd-* de fases complejas usaban north-mini-code-free (reportes vacios) → deepseek-v4-flash-free (2026-08-01)
 - Diseño v2: get_server_base() en api.py, cache sin invalidacion (URL incluye servidor), market_summary() en formatting.py devolviendo dict, normalizar() con unicodedata, buscador plan B catalogo local, selected_server en config (2026-08-01)
+- BASE v2 (migracion de tests): sys.path absoluto de Temp reemplazado por path derivado de `__file__` (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`) — los tests corren desde la raiz sin import relativo (no aplica `python -m`, solo script directo) (2026-08-01)
 - CAMBIO v2 acordado: T8 recursos + regla ingredientes + buscador global (ignora acentos, API) + historial/favoritos + cambio de servidor (2026-08-01)
 - API Albion tiene 3 servidores por subdominio: west (America), east (Europa), asia (Asia) — hoy fija a west (2026-08-01)
 - SDD init hecho: openspec/ + Engram sdd-init/albion; sin pytest -> strict_tdd: false (2026-08-01)
@@ -76,6 +78,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - Cache 60s + backoff 429 en api.py (2026-07-31)
 
 ## Tests / verificacion
-- Bateria en `C:\Users\DrFox\AppData\Local\Temp\opencode\regression_fase2.py` (12 secciones: limpiar_pantalla, _mover_cursor, _menu_seleccion, E2E menu_principal, pausa, confirmar, hints, diferenciador, colores T6 truecolor)
-- API: `C:\Users\DrFox\AppData\Local\Temp\opencode\test_api_cache.py` (4 tests: cache TTL, 429 backoff)
-- Correr: `python -X utf8 regression_fase2.py && python -X utf8 test_api_cache.py` desde `C:\Users\DrFox\albion`
+- Bateria en `tests/regression_fase2.py` (12 secciones: limpiar_pantalla, _mover_cursor, _menu_seleccion, E2E menu_principal, pausa, confirmar, hints, diferenciador, colores T6 truecolor)
+- API: `tests/test_api_cache.py` (4 tests: cache TTL, 429 backoff)
+- Correr desde la raiz: `python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py`
+- Origenes intactos en `C:\Users\DrFox\AppData\Local\Temp\opencode\` (rollback seguro: los originales no se tocaron; los nuevos archivos en tests/ son copias con el import de sys.path relativo a la raiz)

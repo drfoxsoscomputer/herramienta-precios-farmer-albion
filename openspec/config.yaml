@@ -7,9 +7,9 @@ context: |
   Architecture: single-package CLI. albion_helper.py (entry) -> menus.py (all UI, arrow
     selector, tier colors, no-flicker diff renderer), constants.py, api.py (60s cache +
     429 backoff), formatting.py (pure helpers), textos.py, albion_config.json (data).
-  Testing: no pytest installed. Verification via inline batteries in
-    C:\Users\DrFox\AppData\Local\Temp\opencode\ (regression_fase2.py, 12 sections;
-    test_api_cache.py, 4 tests). Both pass with `python -X utf8` from repo cwd.
+  Testing: no pytest installed. Verification via inline batteries in tests/
+    (tests/regression_fase2.py, 12 sections; tests/test_api_cache.py, 4 tests).
+    Both pass with `python -X utf8` from repo cwd.
   Style: UI in neutral Spanish (user is Venezuelan, no voseo); identifiers without
     accents; generated artifacts default to English.
   User: Python beginner — every phase must teach with clear explanations. Do NOT install
@@ -30,9 +30,9 @@ rules:
   apply:
     - Follow existing code patterns
     tdd: false
-    test_command: "python -X utf8 C:\Users\DrFox\AppData\Local\Temp\opencode\regression_fase2.py && python -X utf8 C:\Users\DrFox\AppData\Local\Temp\opencode\test_api_cache.py"
+    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py"
   verify:
-    test_command: "python -X utf8 C:\Users\DrFox\AppData\Local\Temp\opencode\regression_fase2.py && python -X utf8 C:\Users\DrFox\AppData\Local\Temp\opencode\test_api_cache.py"
+    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py"
     build_command: ""
     coverage_threshold: 0
   archive:
