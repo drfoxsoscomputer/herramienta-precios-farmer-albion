@@ -55,8 +55,12 @@ def _panel_resumen(resumen, mostrar_ingrediente=False):
     if resumen.get("sin_datos"):
         lineas.append(f"  [dim]{RESUMEN['sin_datos']}[/]")
     else:
-        lineas.append(f"  {RESUMEN['venta_min']}:  [bold]${format_price(resumen['min_venta'])}[/]")
-        lineas.append(f"  {RESUMEN['venta_max']}:  [bold]${format_price(resumen['max_venta'])}[/]")
+        min_ciudad = resumen.get("min_ciudad") or ""
+        max_ciudad = resumen.get("max_ciudad") or ""
+        min_txt = f" ({min_ciudad})" if min_ciudad else ""
+        max_txt = f" ({max_ciudad})" if max_ciudad else ""
+        lineas.append(f"  {RESUMEN['venta_min']}:  [bold]${format_price(resumen['min_venta'])}[/]{min_txt}")
+        lineas.append(f"  {RESUMEN['venta_max']}:  [bold]${format_price(resumen['max_venta'])}[/]{max_txt}")
         if resumen.get("volumen_total", 0) > 0:
             lineas.append(f"  {RESUMEN['volumen']}:  [bold]{resumen['volumen_total']:,}[/] uds")
             if resumen.get("dia_mayor_venta"):
@@ -720,9 +724,6 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     ref_esp = REF_MAP.get(ref_label, ref_label)
     ref_nombre = tier_data.get("refinado_nombre", ref_esp)
 
-    tier_num = int(tier_key[1:])
-    es_bajo = tier_num <= 3
-
     # Titulo segun modo
     if modo == "crudo":
         titulo_item = nombre_real
@@ -771,12 +772,12 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         for city in CITIES:
             row = [city]
             plano = prices_map.get(crudo_id, {}).get(city, 0)
-            row.append(color_item(plano, planos.values(), es_bajo))
+            row.append(color_item(plano, planos.values()))
             for i in range(4):
                 eid = ench_ids[i]
                 val = prices_map.get(eid, {}).get(city, 0)
                 vals = [prices_map.get(ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ench_ids[i], {}).get(c, 0) > 0]
-                row.append(color_item(val, vals, es_bajo))
+                row.append(color_item(val, vals))
             tbl.add_row(*row)
         console.print(tbl)
 
@@ -794,12 +795,12 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         for city in CITIES:
             row = [city]
             ref = prices_map.get(refinado_id, {}).get(city, 0)
-            row.append(color_item(ref, refs.values(), es_bajo))
+            row.append(color_item(ref, refs.values()))
             for i in range(4):
                 eid = ref_ench_ids[i]
                 val = prices_map.get(eid, {}).get(city, 0)
                 vals = [prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0]
-                row.append(color_item(val, vals, es_bajo))
+                row.append(color_item(val, vals))
             # Dif: ref base vs plano base (solo si tenemos ambos datos)
             diff = ""
             plano_p = prices_map.get(crudo_id, {}).get(city, 0)
@@ -840,13 +841,13 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     if modo == "crudo" or modo == "todo":
         crudo_vals = {c: prices_map.get(crudo_id, {}).get(c, 0) for c in CITIES if prices_map.get(crudo_id, {}).get(c, 0) > 0}
         if crudo_vals:
-            c, p = mejor_ciudad(crudo_vals, "min" if es_bajo else "max")
-            lineas.append(f"  {nombre_real}: [bold]{c}[/] ${p:,}")
+            c, p = mejor_ciudad(crudo_vals)
+            lineas.append(f"  {nombre_real}: [bold]{c}[/] ${p:,}  (mayor precio)")
     if modo == "refinado" or modo == "todo":
         ref_vals = {c: prices_map.get(refinado_id, {}).get(c, 0) for c in CITIES if prices_map.get(refinado_id, {}).get(c, 0) > 0}
         if ref_vals:
-            c, p = mejor_ciudad(ref_vals, "min" if es_bajo else "max")
-            lineas.append(f"  {ref_nombre}: [bold]{c}[/] ${p:,}")
+            c, p = mejor_ciudad(ref_vals)
+            lineas.append(f"  {ref_nombre}: [bold]{c}[/] ${p:,}  (mayor precio)")
 
     # Niveles 1-4
     for i in range(4):
@@ -867,18 +868,18 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         enc_color = ENCH_COLORS[i + 1]
         lineas.append("")
         if ench_vals:
-            c, p = mejor_ciudad(ench_vals, "min" if es_bajo else "max")
-            lineas.append(f"  [{enc_color}]{nombre_real} {enc_nombre}[/]: [bold]{c}[/] ${p:,}")
+            c, p = mejor_ciudad(ench_vals)
+            lineas.append(f"  [{enc_color}]{nombre_real} {enc_nombre}[/]: [bold]{c}[/] ${p:,}  (mayor precio)")
         if ref_ench_vals:
-            c, p = mejor_ciudad(ref_ench_vals, "min" if es_bajo else "max")
-            lineas.append(f"  [{enc_color}]{ref_nombre} {enc_nombre}[/]: [bold]{c}[/] ${p:,}")
+            c, p = mejor_ciudad(ref_ench_vals)
+            lineas.append(f"  [{enc_color}]{ref_nombre} {enc_nombre}[/]: [bold]{c}[/] ${p:,}  (mayor precio)")
 
     if not lineas:
         txt = "  [dim]Sin datos de precios.[/]"
     else:
         txt = "\n".join(lineas).rstrip()
 
-    console.print(Panel(txt, title="[bold]Observacion[/]", border_style="green", box=box.HEAVY, title_align="left"))
+    console.print(Panel(txt, title="[bold]Precio mayor por ciudad[/]", border_style="green", box=box.HEAVY, title_align="left"))
 
     # ─── Resumen de mercado (informativo, sin recomendaciones) ──
     # get_history_raw comparte URL con get_history del panel de arriba:
@@ -1166,10 +1167,10 @@ def ver_detalle_insumo(nombre, item_id, config):
                 receta_parts.append(f"{cantidad} x {ing_nombre}")
             contenido.append(Text.from_markup(f"    [dim]Receta:[/] {' + '.join(receta_parts)}"))
 
-            contenido.append(Text.from_markup(f"    Mejor venta:  [bold green]{mejor_ciudad_venta}[/] [green]${mejor_venta:,}[/]"))
+            contenido.append(Text.from_markup(f"    Venta en [bold]{mejor_ciudad_venta}[/]: [green]${mejor_venta:,}[/]"))
             contenido.append(Text.from_markup(""))
 
-            # ── Insumos (comprando al mas barato) ──
+            # ── Insumos (precio menor por ciudad) ──
             costo_total = 0
             filas_compra = []
             for ing_id, cantidad in receta.items():
@@ -1184,7 +1185,7 @@ def ver_detalle_insumo(nombre, item_id, config):
                 else:
                     filas_compra.append((ing_nombre, cantidad, "N/D", 0, 0))
 
-            contenido.append(Text.from_markup("  [bold]Insumos (comprando al mas barato):[/]"))
+            contenido.append(Text.from_markup("  [bold]Insumos (precio menor por ciudad):[/]"))
             contenido.append(_tabla_insumos(filas_compra))
             contenido.append(Text.from_markup(f"    [bold]Costo total:[/]        [bold]${costo_total:,}[/]"))
             ganancia = mejor_venta - costo_total
@@ -1213,17 +1214,6 @@ def ver_detalle_insumo(nombre, item_id, config):
                     filas_venta.append((ing_nombre, cantidad, "N/D", 0, 0))
             contenido.append(_tabla_insumos(filas_venta))
             contenido.append(Text.from_markup(f"    [bold]Total:[/]              [bold]${valor_insumos:,}[/]"))
-
-            contenido.append(Text.from_markup(""))
-            ganancia_extra = mejor_venta - valor_insumos
-            if ganancia_extra > 0:
-                pct_extra = pct(ganancia_extra, valor_insumos)
-                contenido.append(Text.from_markup(f"  [bold green]✓ CONVIENE FABRICAR[/]  (ganancia extra: +${ganancia_extra:,}, {pct_extra:.1f}%)"))
-            elif ganancia_extra < 0:
-                pct_perdida = pct(abs(ganancia_extra), valor_insumos)
-                contenido.append(Text.from_markup(f"  [bold red]✗ VENDER INSUMOS[/]  (fabricar rinde -${abs(ganancia_extra):,}, {pct_perdida:.1f}% menos)"))
-            else:
-                contenido.append(Text.from_markup(f"  [bold yellow]~ Es igual[/]  (misma ganancia)"))
 
             # ── TOTAL por salsa ──
             contenido.append(Text.from_markup(""))

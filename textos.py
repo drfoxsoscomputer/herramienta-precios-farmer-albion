@@ -8,8 +8,8 @@
 RESENAS_MENU = {
     "principal": (
         "Elige una seccion. Cada una muestra el mercado de un rubro: "
-        "precios por ciudad, la mejor ciudad para vender o comprar, "
-        "y el volumen de los ultimos 7 dias."
+        "precio por ciudad, el dia de mayor venta y el volumen de los "
+        "ultimos 7 dias."
     ),
     "pesca": (
         "Elige un pez. Veras su precio por ciudad, el volumen de los "
@@ -23,8 +23,8 @@ RESENAS_MENU = {
     ),
     "insumos": (
         "Elige una salsa. Veras su analisis de rentabilidad: receta, "
-        "costo de insumos, ganancia al fabricarla, y si conviene fabricar "
-        "o vender los insumos por separado."
+        "costo de insumos, ganancia al fabricarla y la comparacion con "
+        "vender los insumos por separado."
     ),
 }
 
@@ -35,14 +35,14 @@ RESENAS_DETALLE = {
         "datos. Abajo, el resumen de mercado muestra datos objetivos."
     ),
     "recurso": (
-        "Tiers bajos: comprar barato es bueno (verde). Tiers altos: vender "
-        "caro es bueno (verde); rojo = el precio contrario. .1 a .4 son "
-        "encantamientos. N/D = sin datos."
+        "Verde = el mayor precio de esa ciudad, rojo = el menor. .1 a .4 "
+        "son encantamientos. N/D = sin datos. El resumen muestra datos "
+        "objetivos."
     ),
     "insumo": (
-        "Se compra cada insumo al precio minimo y se vende en la ciudad "
-        "que paga mas. Compara fabricar la salsa vs vender los insumos "
-        "por separado."
+        "Costo de insumos, precio de venta y ganancia por salsa. La "
+        "comparacion muestra el valor de fabricar vs vender los insumos "
+        "por separado (datos objetivos)."
     ),
 }
 
@@ -69,11 +69,11 @@ LEYENDA_TIERS = (
 
 # ─── Resenas de las opciones del menu principal ─────────────────
 RESENAS_OPCIONES_PRINCIPAL = {
-    1: "Pesca de peces comunes; precios por ciudad, entero vs picado, mejor ciudad para vender.",
-    2: "Fibra: precio del recurso, verde = barato, rojo = caro. Tiers bajos: comprar barato.",
-    3: "Madera: precio del recurso, verde = barato, rojo = caro. Tiers bajos: comprar barato.",
-    4: "Cuero: precio del recurso, verde = barato, rojo = caro. Tiers bajos: comprar barato.",
-    5: "Mineral: precio del recurso, verde = barato, rojo = caro. Tiers bajos: comprar barato.",
-    6: "Piedra: precio del recurso, verde = barato, rojo = caro. Tiers bajos: comprar barato.",
+    1: "Pesca de peces comunes; precios por ciudad, entero y picado, volumen de los ultimos 7 dias.",
+    2: "Fibra: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
+    3: "Madera: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
+    4: "Cuero: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
+    5: "Mineral: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
+    6: "Piedra: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
     7: "Salsas de pescado: analisis de rentabilidad, receta, costo de insumos.",
 }

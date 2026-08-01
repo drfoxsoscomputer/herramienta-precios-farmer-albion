@@ -38,17 +38,19 @@ hist = [entry("Thetford", [punto("2026-07-25T16:00:00", 10)]),
         entry("Lymhurst", [punto("2026-07-25T18:00:00", 5)])]
 r = market_summary(precios_pez, hist, "T4_FISH_FRESHWATER_ALL_COMMON")
 assert r["min_venta"] == 900 and r["max_venta"] == 1200, f"min/max: {r}"
+assert r["min_ciudad"] == "Lymhurst" and r["max_ciudad"] == "Thetford", f"ciudades: {r}"
 assert r["volumen_total"] == 15, f"volumen: {r}"
 assert r["sin_datos"] is False, f"sin_datos: {r}"
-print("PASS pez con datos: min/max/volumen visibles, sin_datos False")
+print("PASS pez con datos: min/max/volumen visibles, ciudades min/max, sin_datos False")
 
 # ── 2. tiburon sin ventas: sin_datos True ─────────────────────
 precios_shark = {SHARK: {c: 0 for c in CITIES}}
 r = market_summary(precios_shark, [], SHARK)
 assert r["sin_datos"] is True, f"tiburon sin_datos: {r}"
 assert r["min_venta"] == 0 and r["max_venta"] == 0, f"tiburon precios: {r}"
+assert r["min_ciudad"] == "" and r["max_ciudad"] == "", f"tiburon ciudades: {r}"
 assert r["volumen_total"] == 0, f"tiburon volumen: {r}"
-print("PASS tiburon sin ventas: sin_datos True (UI muestra 'Sin datos de venta')")
+print("PASS tiburon sin ventas: sin_datos True (UI muestra 'Sin datos de venta'), ciudades vacias")
 
 # ── 3. dia de mayor venta con historial completo (7 dias) ──────
 dias7 = ["2026-07-20T12:00:00", "2026-07-21T12:00:00", "2026-07-22T12:00:00",

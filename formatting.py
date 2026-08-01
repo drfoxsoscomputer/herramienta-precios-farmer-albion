@@ -47,26 +47,17 @@ def color_precio(valor, mejor_valor, peor_valor):
     return f"${format_price(valor)}"
 
 
-def color_item(val, todos, es_bajo):
-    """Colorea el precio de un recurso segun su posicion en la lista.
-
-    es_bajo=True  -> tiers bajos (T2/T3): barato es bueno (verde).
-    es_bajo=False -> tiers altos (T4+): caro es bueno (verde).
-    """
+def color_item(val, todos):
+    """Colorea el precio de un recurso segun su posicion: verde el mayor,
+    rojo el menor (dato neutro, sin recomendar comprar/vender)."""
     if val == 0:
         return f"[dim]N/D[/]"
     if not todos:
         return f"${format_price(val)}"
-    if es_bajo:
-        if val == min(todos):
-            return f"[bold green]${format_price(val)}[/]"
-        if val == max(todos):
-            return f"[red]${format_price(val)}[/]"
-    else:
-        if val == max(todos):
-            return f"[bold green]${format_price(val)}[/]"
-        if val == min(todos):
-            return f"[red]${format_price(val)}[/]"
+    if val == max(todos):
+        return f"[bold green]${format_price(val)}[/]"
+    if val == min(todos):
+        return f"[red]${format_price(val)}[/]"
     return f"${format_price(val)}"
 
 
@@ -137,6 +128,8 @@ def market_summary(precios, historial, item, recetas_config=None):
     Devuelve datos objetivos para que la UI formatee (NO recomienda acciones):
       min_venta / max_venta   -> precio de venta minimo/maximo del item
                                  entre las ciudades con datos
+      min_ciudad / max_ciudad -> ciudad donde se da cada extremo ("" si
+                                 no hay datos; primer match iterando precios)
       volumen_total           -> suma de item_count del historial
       dia_mayor_venta         -> dia de la semana con mas ventas (espanol)
       volumen_dia             -> item_count sumado ese dia
@@ -154,6 +147,14 @@ def market_summary(precios, historial, item, recetas_config=None):
     vals = [v for v in p_item.values() if v > 0]
     min_venta = min(vals) if vals else 0
     max_venta = max(vals) if vals else 0
+    min_ciudad = ""
+    max_ciudad = ""
+    if vals:
+        for c, v in p_item.items():
+            if v == min_venta and not min_ciudad:
+                min_ciudad = c
+            if v == max_venta and not max_ciudad:
+                max_ciudad = c
 
     # ── Historial: volumen total + dia de mayor venta ──
     volumen_total = 0
@@ -197,6 +198,8 @@ def market_summary(precios, historial, item, recetas_config=None):
     return {
         "min_venta": min_venta,
         "max_venta": max_venta,
+        "min_ciudad": min_ciudad,
+        "max_ciudad": max_ciudad,
         "volumen_total": volumen_total,
         "dia_mayor_venta": dia_mayor_venta,
         "volumen_dia": volumen_dia,
