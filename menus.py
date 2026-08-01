@@ -51,45 +51,78 @@ class _RawControl(Control):
         self.segment = Segment(text, None)
 
 
-def limpiar_pantalla():
-    """Limpia la consola via la API nativa de Windows (sin ANSI).
+# ─── Consola Windows (API nativa, sin ANSI) ────────────────────
+if os.name == "nt":
+    import ctypes
 
-    En consolas Windows legacy los codigos ANSI no se interpretan solos:
-    Rich emula solo los que conoce (\\x1b[2J), por eso las secuencias
-    crudas como \\x1b[J se pasaban literales y la pantalla se duplicaba.
-    FillConsoleOutputCharacterW + SetConsoleCursorPosition es lo que hace
-    `cls` por debajo: funciona SIEMPRE (cmd.exe, Windows Terminal, ConEmu).
+    class _COORD(ctypes.Structure):
+        _fields_ = [("X", ctypes.c_short), ("Y", ctypes.c_short)]
+
+    class _SMALL_RECT(ctypes.Structure):
+        _fields_ = [("Left", ctypes.c_short), ("Top", ctypes.c_short),
+                    ("Right", ctypes.c_short), ("Bottom", ctypes.c_short)]
+
+    class _CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
+        _fields_ = [("dwSize", _COORD), ("dwCursorPosition", _COORD),
+                    ("wAttributes", ctypes.c_ushort), ("srWindow", _SMALL_RECT),
+                    ("dwMaximumWindowSize", _COORD)]
+
+    _kernel32 = ctypes.windll.kernel32
+    _STD_OUTPUT_HANDLE = -11  # STD_OUTPUT_HANDLE
+else:
+    _kernel32 = None
+
+
+def _consola_handle():
+    """Devuelve el handle de salida de la consola real, o None si no hay."""
+    if _kernel32 is None:
+        return None
+    try:
+        h = _kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
+        return h if h != -1 else None
+    except Exception:
+        return None
+
+
+def limpiar_pantalla():
+    """Limpia la consola completa (API nativa de Windows, sin ANSI).
+
+    Se usa al ENTRAR a una pantalla (menu o detalle). FillConsoleOutputCharacterW
+    + SetConsoleCursorPosition es lo que hace `cls` por debajo y funciona en
+    consolas legacy (cmd.exe) donde los codigos ANSI no se interpretan solos.
     En Unix/redireccion (sin consola real) cae al ANSI de Rich.
     """
-    if os.name == "nt":
+    h = _consola_handle()
+    if h is not None:
         try:
-            import ctypes
-
-            class COORD(ctypes.Structure):
-                _fields_ = [("X", ctypes.c_short), ("Y", ctypes.c_short)]
-
-            class SMALL_RECT(ctypes.Structure):
-                _fields_ = [("Left", ctypes.c_short), ("Top", ctypes.c_short),
-                            ("Right", ctypes.c_short), ("Bottom", ctypes.c_short)]
-
-            class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
-                _fields_ = [("dwSize", COORD), ("dwCursorPosition", COORD),
-                            ("wAttributes", ctypes.c_ushort), ("srWindow", SMALL_RECT),
-                            ("dwMaximumWindowSize", COORD)]
-
-            kernel32 = ctypes.windll.kernel32
-            h = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
-            csbi = CONSOLE_SCREEN_BUFFER_INFO()
-            if h != -1 and kernel32.GetConsoleScreenBufferInfo(h, ctypes.byref(csbi)):
+            csbi = _CONSOLE_SCREEN_BUFFER_INFO()
+            if _kernel32.GetConsoleScreenBufferInfo(h, ctypes.byref(csbi)):
                 n = csbi.dwSize.X * csbi.dwSize.Y
                 written = ctypes.c_ulong()
-                kernel32.FillConsoleOutputCharacterW(h, ord(" "), n, COORD(0, 0), ctypes.byref(written))
-                kernel32.FillConsoleOutputAttribute(h, csbi.wAttributes, n, COORD(0, 0), ctypes.byref(written))
-                kernel32.SetConsoleCursorPosition(h, COORD(0, 0))
+                origen = _COORD(0, 0)
+                _kernel32.FillConsoleOutputCharacterW(h, ord(" "), n, origen, ctypes.byref(written))
+                _kernel32.FillConsoleOutputAttribute(h, csbi.wAttributes, n, origen, ctypes.byref(written))
+                if _kernel32.SetConsoleCursorPosition(h, origen):
+                    return
+        except Exception:
+            pass
+    console.control(_RawControl("\x1b[2J\x1b[H"))
+
+
+def _ir_inicio():
+    """Mueve el cursor a home SIN borrar la pantalla.
+
+    Para redibujar durante la navegacion: pinta encima del frame anterior
+    (mismo numero de lineas), asi NO hay flash ni salto de pantalla.
+    """
+    h = _consola_handle()
+    if h is not None:
+        try:
+            if _kernel32.SetConsoleCursorPosition(h, _COORD(0, 0)):
                 return
         except Exception:
             pass
-    console.control(_RawControl("\x1b[H\x1b[J"))
+    console.control(_RawControl("\x1b[H"))
 
 
 def _leer_tecla(espera=0):
@@ -255,8 +288,13 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo=""):
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
         console.print(f"  [dim]{col_hint}Arriba/Abajo mover · Enter elegir · 0/R atajos · Esc volver[/]")
 
+    primera = True
     while True:
-        limpiar_pantalla()
+        if primera:
+            limpiar_pantalla()  # primera pasada: borra todo
+            primera = False
+        else:
+            _ir_inicio()  # redibujado: pinta encima, sin flash
         console.print(titulo)
         console.print()
         render_grid()
