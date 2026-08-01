@@ -14,6 +14,11 @@ python albion_helper.py
 ```
 Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 
+## Repo GitHub (publico)
+- https://github.com/drfoxsoscomputer/herramienta-precios-farmer-albion
+- Nombre elegido con skill de copywriting: "La Herramienta de Precios del Farmer en Albion" (herramienta + precios + farmer + Albion)
+- README en espanol con disclaimer de marca (proyecto no oficial de fans; "Albion Online" es marca de Sandbox Interactive)
+
 ## Estructura
 - `albion_helper.py` — entry point (llama a menus.menu_principal)
 - `menus.py` — toda la UI: selector con flechas, menus, detalles, colores por tier
@@ -58,9 +63,12 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - [ ] Probar la herramienta en la practica con pescados (usuario)
 - [ ] Continuar con recursos: fibra, madera, cuero, mineral (usuario probara)
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
+- [x] Repo creado en GitHub publico (2026-08-01): herramienta-precios-farmer-albion
+- [x] Skills de marketing instalados (copywriting + product-marketing desde coreyhaines31/marketingskills) — registro actualizado
 
 ## Decisiones recientes
-- CAUSA RAIZ sub-agentes: sdd-* de fases complejas usaban north-mini-code-free (reportes vacios) → deepseek-v4-flash-free (2026-08-01)
+- NOMBRE DEL REPO: "La Herramienta de Precios del Farmer en Albion" (slug: herramienta-precios-farmer-albion) — formula que el usuario aprobo: [que es herramienta] + [para que precios] + [para quien farmer] + [juego Albion]; espanol, no ingles (2026-08-01)
+- Skills de marketing instalados en .agents/skills: copywriting + product-marketing (coreyhaines31/marketingskills, MIT) — metodo: git clone + copia (npx skills add quedo en modo interactivo) (2026-08-01)
 - Diseño v2: get_server_base() en api.py, cache sin invalidacion (URL incluye servidor), market_summary() en formatting.py devolviendo dict, normalizar() con unicodedata, buscador plan B catalogo local, selected_server en config (2026-08-01)
 - BASE v2 (migracion de tests): sys.path absoluto de Temp reemplazado por path derivado de `__file__` (`os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`) — los tests corren desde la raiz sin import relativo (no aplica `python -m`, solo script directo) (2026-08-01)
 - CAMBIO v2 acordado: T8 recursos + regla ingredientes + buscador global (ignora acentos, API) + historial/favoritos + cambio de servidor (2026-08-01)
