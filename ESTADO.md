@@ -22,10 +22,14 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - `formatting.py` — helpers puros de formato (precios, colores, historial)
 - `textos.py` — reseñas de ayuda (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS)
 - `albion_config.json` — datos: pescados (38), recursos (fibra/madera/cuero/mineral/piedra), salsas con recetas
+- `openspec/config.yaml` — config SDD (contexto, strict_tdd: false, comando de tests, reglas por fase)
+- `openspec/specs/` + `openspec/changes/archive/` — estructura SDD (fuente de verdad, versionada en git)
 - `ESTADO.md` — este archivo (memoria viva del proyecto)
 
 ## Estado actual
 - Protocolo de continuidad global activo (AGENTS.md global): ESTADO.md + CodeGraph + responsabilidad de subagentes
+- **SDD inicializado (2026-08-01)**: modo hybrid (openspec + engram); strict_tdd: false (no hay pytest); artifact store "both"; PRs force-chained; review budget 400 líneas
+- Contexto persistido en Engram: `sdd-init/albion` (#153), `sdd/albion/testing-capabilities` (#154), `skill-registry` (#155)
 - CodeGraph indexado en `.codegraph/` (6 archivos, 105 nodos) — regenerar con `codegraph update` tras cambios estructurales
 - Selector con flechas + numeros en todos los menus (grid 2 columnas en pesca/recursos)
 - Navegacion unificada: flechas mover, Enter elegir, R recargar (global), Esc volver (raiz: confirmacion para salir)
@@ -37,12 +41,23 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - Cache 60s en api.py contra rate limit 429; backoff 2s/4s
 
 ## Pendientes / ToDo
+- [ ] CAMBIO SDD v2 (acordado con el usuario, preflight: interactive/both/force-chained/400):
+  - [ ] BASE: migrar baterias de tests de Temp a `tests/` en el repo
+  - [ ] A: T8 en los 5 recursos (fibra/madera/cuero/mineral/piedra x crudo+refinado = 10 items)
+  - [ ] B: regla ingredientes — no recomendar picar pescados clave (recetas del config + volumen)
+  - [ ] C: buscador global desde menu principal (ignora acentos, busca en API, listado seleccionable)
+  - [ ] D: historial de precios (get_history existe sin uso) + favoritos — definir en detalle al llegar
+  - [ ] E: cambio de servidor (west=America / east=Europa / asia=Asia; hoy fijo en constants.py)
+  - Estado: propuesta sdd-propose LANZADA y ABORTADA por el usuario ("seguimos luego").
+  - Retomar: relanzar sdd-propose con el prompt guardado en Engram topic `sdd/albion-v2/propose-prompt` (#157); estado en `sdd/albion-v2/estado-sesion` (#156).
 - [ ] Probar la herramienta en la practica con pescados (usuario)
 - [ ] Continuar con recursos: fibra, madera, cuero, mineral (usuario probara)
-- [ ] Plan de 8 fases "helper entendible": fases 0-2 hechas; detalle de fases 3-8 NO quedo registrado — reconstruir con el usuario
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
 
 ## Decisiones recientes
+- CAMBIO v2 acordado: T8 recursos + regla ingredientes + buscador global (ignora acentos, API) + historial/favoritos + cambio de servidor (2026-08-01)
+- API Albion tiene 3 servidores por subdominio: west (America), east (Europa), asia (Asia) — hoy fija a west (2026-08-01)
+- SDD init hecho: openspec/ + Engram sdd-init/albion; sin pytest -> strict_tdd: false (2026-08-01)
 - Protocolo anti-limbo global: ESTADO.md por proyecto + codegraph + verificar subagentes (2026-08-01)
 - `.atl/` y `.codegraph/` en .gitignore (artefactos de tooling regenerables) (2026-08-01)
 - Selector sin parpadeo: frame a buffer + reescribir solo filas cambiadas (2026-08-01)
