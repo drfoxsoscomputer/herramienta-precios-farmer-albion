@@ -228,13 +228,16 @@ def _mover_cursor(cursor, tecla, filas, n):
         return cursor
 
 
-def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo=""):
+def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None):
     """Selector numerado con flechas.
 
     opciones: lista de (label, desc) — label con markup Rich, desc resena
     contextual de la opcion (puede ser "").
     filas None -> una sola columna. Con filas se usa grid column-major
     (item = columna * filas + fila), igual que el reparto de la lista.
+    numeros: lista opcional con la etiqueta a mostrar por opcion (ej:
+    ["1","2","R","0"]). Por defecto numera 1..n. El numero mostrado NO
+    cambia el atajo por teclado (las teclas se leen aparte).
     Devuelve int (indice 0-based), "0" (volver), "R" (reiniciar) o None
     (esc/q = cancelar).
     """
@@ -255,7 +258,8 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo=""):
                 if idx >= n:
                     break
                 label, _ = opciones[idx]
-                numero = f"[yellow][{idx+1:>{ncolw}}][/]"
+                etiqueta = str(idx + 1 if numeros is None else numeros[idx])
+                numero = f"[yellow][{etiqueta:>{ncolw}}][/]"
                 if idx == cursor:
                     celdas[r][c] = f"[bold cyan]\u25b8[/] {numero} [bold]{label}[/]"
                 else:
@@ -371,11 +375,12 @@ def menu_principal(config):
         )
         opciones = []
         for i, nombre in enumerate(nombres, start=1):
-            opciones.append((f"[bold yellow][{i}][/] {nombre}", RESENAS_OPCIONES_PRINCIPAL[i]))
-        opciones.append(("[bold yellow][R][/] Reiniciar (recargar cambios)", ""))
-        opciones.append(("[bold yellow][0][/] Salir", ""))
+            opciones.append((nombre, RESENAS_OPCIONES_PRINCIPAL[i]))
+        opciones.append(("Reiniciar (recargar cambios)", ""))
+        opciones.append(("Salir", ""))
 
-        idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"])
+        idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"],
+                              numeros=[str(i) for i in range(1, 8)] + ["R", "0"])
 
         if idx is None or idx == "0" or idx == 8:
             console.print("\n[bold green]Que la plata te sobre![/]")
