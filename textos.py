@@ -8,13 +8,11 @@
 RESENAS_MENU = {
     "principal": (
         "Elige una seccion. Cada una muestra el mercado de un rubro: "
-        "precio por ciudad, el dia de mayor venta y el volumen de los "
-        "ultimos 7 dias."
+        "precio por ciudad y el volumen de los ultimos 7 dias."
     ),
     "pesca": (
         "Elige un pez. Veras su precio por ciudad, el volumen de los "
-        "ultimos 7 dias, el dia de mayor venta y si es ingrediente de "
-        "alguna salsa."
+        "ultimos 7 dias y si es ingrediente de alguna salsa."
     ),
     "recursos": (
         "Elige un tier. Los tiers bajos (T2/T3) muestran crudo y refinado "
@@ -51,8 +49,6 @@ RESUMEN = {
     "titulo": "Resumen de mercado",
     "venta_min": "Venta min",
     "venta_max": "Venta max",
-    "volumen": "Volumen 7 dias",
-    "dia_mayor": "Dia de mayor venta",
     "ingrediente": "Es ingrediente de",
     "no_ingrediente": "No es ingrediente de ninguna salsa",
     "diferencia": "Diferencia refinado - crudo",

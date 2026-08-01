@@ -48,6 +48,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - Truecolor forzado en el frame (T6 = naranja 208 real, no amarillo degradado)
 - Item "Reiniciar" eliminado de la raiz (R ya recarga desde cualquier pantalla)
 - Cache 60s en api.py contra rate limit 429; backoff 2s/4s
+- **SDD v2 — SLICE APPLY 3 (2026-08-01)**: market_summary SIN historial (firma `market_summary(precios, item, recetas_config=None)`); eliminados volumen_total/dia_mayor_venta/volumen_dia del calculo, del dict de retorno y del panel de resumen (dato descartado por el usuario); panel de recursos ahora "Precio mayor y menor por ciudad" (mayor + menor fusionados por linea con su ciudad via `mejor_ciudad(vals, "min")`); copy de textos.py sin "dia de mayor venta"; tests/test_market_summary.py actualizado al nuevo contrato (5 escenarios); `get_history_raw` ya no se importa ni se usa en menus.py (sigue en api.py, sin callers)
 
 ## Pendientes / ToDo
 - [ ] CAMBIO SDD v2 (acordado con el usuario, preflight: interactive/both/force-chained/400):
@@ -72,6 +73,7 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - [x] Skills de marketing instalados (copywriting + product-marketing desde coreyhaines31/marketingskills) — registro actualizado
 
 ## Decisiones recientes
+- market_summary SIN historial: el usuario descarto volumen_total / dia_mayor_venta / volumen_dia ("dato pasado, no sirve"); el resumen queda solo con min/max por ciudad, ingrediente y diferencia refinado; el volumen 7d SIGUE visible en los paneles de historial por ciudad del detalle; `sin_datos` ahora es `max_venta == 0` (2026-08-01)
 - FIX post-verificacion: la app NO recomienda comprar/vender (el usuario decide segun su rol); los colores verde/rojo son solo posicion del precio (mayor/menor) y el resumen de mercado muestra la ciudad de cada extremo (2026-08-01)
 - NOMBRE DEL REPO: "La Herramienta de Precios del Farmer en Albion" (slug: herramienta-precios-farmer-albion) — formula que el usuario aprobo: [que es herramienta] + [para que precios] + [para quien farmer] + [juego Albion]; espanol, no ingles (2026-08-01)
 - Skills de marketing instalados en .agents/skills: copywriting + product-marketing (coreyhaines31/marketingskills, MIT) — metodo: git clone + copia (npx skills add quedo en modo interactivo) (2026-08-01)
@@ -95,6 +97,6 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - Bateria en `tests/regression_fase2.py` (12 secciones: limpiar_pantalla, _mover_cursor, _menu_seleccion, E2E menu_principal, pausa, confirmar, hints, diferenciador, colores T6 truecolor)
 - API: `tests/test_api_cache.py` (4 tests: cache TTL, 429 backoff)
 - T8: `tests/test_recursos_t8.py` (6 checks: tier T8 en 5 recursos, 4 claves, prefijo T8_, pares, simetria T4/T6, nombres)
-- Market summary: `tests/test_market_summary.py` (7 tests: pez con datos, tiburon sin ventas, dia mayor 7d/3d, ingrediente si/no, diferencia refinado, sin peticiones extra)
+- Market summary: `tests/test_market_summary.py` (5 tests: pez con datos + contrato de claves, tiburon sin ventas, ingrediente si/no, diferencia refinado, sin peticiones extra)
 - Correr desde la raiz: `python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py`
 - Origenes intactos en `C:\Users\DrFox\AppData\Local\Temp\opencode\` (rollback seguro: los originales no se tocaron; los nuevos archivos en tests/ son copias con el import de sys.path relativo a la raiz)

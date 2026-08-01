@@ -3,15 +3,6 @@
 # Funciones PURAS: todo lo que necesitan entra por parametros.
 # No tocan la red, no leen config, no imprimen por si solas.
 
-from datetime import datetime
-
-# Nombre de dia (strftime %A) -> espanol (sin acentos, convencion del proyecto)
-DIAS_ESP = {
-    "Monday": "lunes", "Tuesday": "martes", "Wednesday": "miercoles",
-    "Thursday": "jueves", "Friday": "viernes", "Saturday": "sabado",
-    "Sunday": "domingo",
-}
-
 # Sufijos de item_id que identifican un producto REFINADO de recurso.
 # Con esto market_summary detecta el par crudo/refinado del mismo tier.
 _SUFIJOS_REFINADO = frozenset({"CLOTH", "PLANKS", "LEATHER", "METALBAR", "STONEBLOCK"})
@@ -122,7 +113,7 @@ def _diferencia_refinado(precios):
     return None
 
 
-def market_summary(precios, historial, item, recetas_config=None):
+def market_summary(precios, item, recetas_config=None):
     """Resumen informativo de mercado (FUNCION PURA: sin red, sin imprimir).
 
     Devuelve datos objetivos para que la UI formatee (NO recomienda acciones):
@@ -130,15 +121,11 @@ def market_summary(precios, historial, item, recetas_config=None):
                                  entre las ciudades con datos
       min_ciudad / max_ciudad -> ciudad donde se da cada extremo ("" si
                                  no hay datos; primer match iterando precios)
-      volumen_total           -> suma de item_count del historial
-      dia_mayor_venta         -> dia de la semana con mas ventas (espanol)
-      volumen_dia             -> item_count sumado ese dia
       es_ingrediente / recetas-> si el item es ingrediente de alguna salsa
       diferencia_refinado     -> precio refinado - crudo (solo recursos)
-      sin_datos               -> True si no hay precio ni volumen
+      sin_datos               -> True si no hay precio de venta
 
     precios: {item_id: {ciudad: sell_price_min}} (lo que ya arma la UI).
-    historial: entries crudos de get_history_raw (data[] con timestamp).
     item: item_id en vista (str).
     recetas_config: dict de insumos_pesca.items (nombre -> {id, receta}).
     """
@@ -156,29 +143,6 @@ def market_summary(precios, historial, item, recetas_config=None):
             if v == max_venta and not max_ciudad:
                 max_ciudad = c
 
-    # ── Historial: volumen total + dia de mayor venta ──
-    volumen_total = 0
-    por_dia = {}
-    for entry in historial or []:
-        for h in entry.get("data", []) or []:
-            cnt = h.get("item_count", 0) or 0
-            volumen_total += cnt
-            ts = h.get("timestamp")
-            if not ts or cnt <= 0:
-                continue
-            try:
-                dia = datetime.fromisoformat(ts).strftime("%A")
-            except ValueError:
-                continue
-            dia_esp = DIAS_ESP.get(dia, dia)
-            por_dia[dia_esp] = por_dia.get(dia_esp, 0) + cnt
-    if por_dia:
-        dia_mayor_venta = max(por_dia, key=por_dia.get)
-        volumen_dia = por_dia[dia_mayor_venta]
-    else:
-        dia_mayor_venta = ""
-        volumen_dia = 0
-
     # ── Ingrediente: el item aparece como clave en alguna receta ──
     es_ingrediente = False
     recetas = []
@@ -193,16 +157,13 @@ def market_summary(precios, historial, item, recetas_config=None):
     # ── Diferencia refinado - crudo (solo si precios trae el par) ──
     diferencia_refinado = _diferencia_refinado(precios)
 
-    sin_datos = (max_venta == 0 and volumen_total == 0)
+    sin_datos = (max_venta == 0)
 
     return {
         "min_venta": min_venta,
         "max_venta": max_venta,
         "min_ciudad": min_ciudad,
         "max_ciudad": max_ciudad,
-        "volumen_total": volumen_total,
-        "dia_mayor_venta": dia_mayor_venta,
-        "volumen_dia": volumen_dia,
         "es_ingrediente": es_ingrediente,
         "recetas": recetas,
         "diferencia_refinado": diferencia_refinado,
