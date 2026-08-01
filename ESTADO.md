@@ -36,12 +36,13 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - **SDD inicializado (2026-08-01)**: modo hybrid (openspec + engram); strict_tdd: false (no hay pytest); artifact store "both"; PRs force-chained; review budget 400 líneas
 - **SDD v2 — BASE COMPLETADA (2026-08-01, slice apply 1)**: baterias de tests migradas de Temp a `tests/` (regression_fase2.py 12 secciones + test_api_cache.py 4 tests); `test_command` en openspec/config.yaml (apply y verify) apunta a `tests/`; ambos PASS desde la raiz con `python -X utf8`
 - **SDD v2 — WORK UNIT 2 COMPLETADO (2026-08-01, slice apply 2, PR 2)**: fase A (10 items T8 en albion_config.json + tests/test_recursos_t8.py) y fase B (get_history_raw en api.py, market_summary pura en formatting.py, resumen "Resumen de mercado" en los 3 detalles de menus.py, copy neutral en textos.py, tests/test_market_summary.py). El bloque de recomendacion picar/entero fue ELIMINADO. `test_command` ahora corre las 4 baterias; 340 lineas de diff (dentro del presupuesto ~345)
+- **SDD v2 — FIX UI (2026-08-01)**: barra de seleccion restaurada a CYAN (estilo de la fase de flechas, memoria #150) — el commit 6281f4f (00:07) la habia cambiado a color-del-tier/blanco; items no seleccionados sin dim; reseña del detalle de pez sin la frase "sin recomendaciones" (texto de mas); `_COLORES_OSCUROS` eliminado (codigo muerto); test regression_fase2.py seccion 8 actualizado al contrato cyan (4 baterias PASS)
 - Contexto persistido en Engram: `sdd-init/albion` (#153), `sdd/albion/testing-capabilities` (#154), `skill-registry` (#155)
 - CodeGraph indexado en `.codegraph/` (6 archivos, 105 nodos) — regenerar con `codegraph update` tras cambios estructurales
 - Selector con flechas + numeros en todos los menus (grid 2 columnas en pesca/recursos)
 - Navegacion unificada: flechas mover, Enter elegir, R recargar (global), Esc volver (raiz: confirmacion para salir)
 - Render SIN parpadeo: diferenciador de lineas (reescribe solo filas cambiadas, ANSI puro)
-- Seleccion con barra del color del tier + texto negro (fallback blanco para colores oscuros)
+- Seleccion con barra CYAN + texto negro (estilo fase de flechas; el commit 6281f4f lo habia cambiado a color-del-tier/blanco y fue revertido)
 - Numero [ x] con el color de su label (ya no amarillo fijo)
 - Truecolor forzado en el frame (T6 = naranja 208 real, no amarillo degradado)
 - Item "Reiniciar" eliminado de la raiz (R ya recarga desde cualquier pantalla)

@@ -236,35 +236,38 @@ txt = Text.from_ansi(raw).plain
 assert raw.count("\x1b[2J") == 1, "un solo clear (primer frame)"
 assert txt.count("TITULO_X") == 1, "el titulo no se re-imprime al navegar"
 assert txt.count("d1") == 1 and txt.count("d2") == 1, "descripciones: una vez cada una"
-assert "\x1b[30;47m" in raw, "seleccion: barra black-on-white (label sin color)"
-assert "46m" not in raw, "ya NO hay barra de fondo cyan"
-assert "\x1b[2m" in raw, "las opciones NO seleccionadas se atenuan (dim)"
+# la barra de seleccion SIEMPRE es cyan (fase de flechas): black-on-cyan
+grid_fila0 = raw.split("\n")[2]  # fila 0: "Uno" (seleccionada en el primer frame)
+grid_fila1 = raw.split("\n")[3]  # fila 1: "Dos" (NO seleccionada)
+assert "\x1b[30;46m" in grid_fila0, "seleccion: barra black-on-cyan"
+assert "\x1b[2m" not in grid_fila1, "opcion NO seleccionada: sin dim"
+assert "\x1b[30;47m" not in raw, "ya NO hay barra de fondo blanco"
 # el segundo frame mueve el cursor: reescribe SOLO las filas del grid
 raw2 = run_diff(["down", "esc"], [("Uno", ""), ("Dos", "")], filas=2)
 assert "\x1b[4;1H" in raw2, "el segundo frame reescribe la fila del nuevo cursor"
-assert "\x1b[3;1H" in raw2, "y la fila anterior (el triangulo se movio)"
+assert "\x1b[3;1H" in raw2, "y la fila anterior (el cursor se movio)"
 assert "\x1b[2;1H" not in raw2, "el titulo NUNCA se re-escribe (sin redibujo completo)"
-assert "\x1b[30;47m" in raw2, "la barra de seleccion sigue presente tras navegar"
-# la barra toma el color del tier del label: cyan -> barra cyan (black-on-cyan)
+assert "\x1b[30;46m" in raw2, "la barra cyan sigue presente tras navegar"
+# con label de tier cyan: la barra SIGUE siendo black-on-cyan (no cambia)
 raw3 = run_diff(["esc"], [("[cyan]Azul[/]", ""), ("Dos", "")], filas=2)
-assert "\x1b[30;46m" in raw3, "barra con el color del tier (cyan -> 30;46)"
-# tier oscuro (grey58) cae a fondo blanco, no a grey oscuro ilegible
+assert "\x1b[30;46m" in raw3, "barra siempre cyan aunque el label sea cyan"
+# tier oscuro (grey58): la barra NO cae a blanco, sigue cyan
 raw4 = run_diff(["esc"], [("[grey58]Gris[/]", ""), ("Dos", "")], filas=2)
-assert "\x1b[30;47m" in raw4, "tier oscuro -> fallback a fondo blanco"
+assert "\x1b[30;46m" in raw4 and "\x1b[30;47m" not in raw4, "grey58 -> barra cyan, no blanco"
 # el [x] no seleccionado lleva el MISMO color que el texto (verde), nunca amarillo
 raw5 = run_diff(["esc"], [("[green]A[/]", ""), ("[green]B[/]", "")], filas=2)
 lineas5 = raw5.split("\n")  # linea 3 = fila del grid con la opcion NO seleccionada
-assert "\x1b[30;42m" in raw5, "barra de seleccion verde (black-on-green)"
-assert "\x1b[2;32m" in lineas5[3], "el [x] no seleccionado lleva el color del label (dim green)"
+assert "\x1b[30;46m" in raw5, "barra de seleccion cyan (aunque el label sea verde)"
+assert "\x1b[32m" in lineas5[3], "el [x] no seleccionado lleva el color del label (verde)"
 assert "\x1b[2;33m" not in lineas5[3], "el [x] de la fila NO seleccionada ya no es amarillo"
-# T6 (dark_orange) en truecolor: naranja real 208, no amarillo degradado
+# T6 (dark_orange) en truecolor: el LABEL se ve naranja 208, la BARRA sigue cyan
 raw6 = run_diff(["down", "esc"], [("[dark_orange]Naranja[/]", ""), ("Dos", "")], filas=2)
 # la reescritura de la fila 0 (cursor salio de Naranja) va tras \x1b[3;1H, hasta \x1b[K
 r0 = raw6.split("\x1b[3;1H", 1)[1].split("\x1b[K", 1)[0]
-assert "\x1b[2;38;5;208m" in r0, "label T6 no seleccionado = naranja 208 (dim), no amarillo"
+assert "\x1b[38;5;208m" in r0, "label T6 no seleccionado = naranja 208, no amarillo"
 assert "\x1b[2;33m" not in r0, "T6 en el grid ya NO degrada a amarillo"
 raw7 = run_diff(["esc"], [("[dark_orange]Naranja[/]", ""), ("Dos", "")], filas=2)
-assert "\x1b[30;48;5;208m" in raw7, "barra T6 seleccionada = black-on-orange (no cae a blanco)"
+assert "\x1b[30;46m" in raw7, "barra T6 seleccionada = black-on-cyan (no naranja ni blanco)"
 print("PASS diferenciador: solo filas cambiadas se re-escriben (sin parpadeo)")
 
 print("\nTODOS LOS TESTS PASARON")

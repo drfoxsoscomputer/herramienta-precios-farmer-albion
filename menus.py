@@ -28,17 +28,6 @@ from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONE
 
 console = Console()
 
-# Colores de etiqueta "oscuros": sobre ellos el texto negro no lee bien,
-# asi que la barra de seleccion cae a fondo blanco (texto negro igual).
-_COLORES_OSCUROS = frozenset({
-    "black", "grey0", "grey3", "grey7", "grey11", "grey15", "grey19",
-    "grey23", "grey27", "grey30", "grey35", "grey37", "grey39", "grey42",
-    "grey46", "grey50", "grey54", "grey58",
-    "dark_red", "dark_green", "dark_blue", "dark_magenta", "dark_cyan",
-    "dark_violet", "dark_goldenrod", "dark_sea_green",
-    "dark_slate_gray", "dark_slate_blue",
-})
-
 
 def _resena(texto, dim=True, c=None):
     """Muestra una resena de ayuda. dim=True -> gris tenue;
@@ -352,12 +341,11 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
                 numero = (f"[{col}][{etiqueta:>{ncolw}}][/]" if col
                           else f"[{etiqueta:>{ncolw}}]")
                 if idx == cursor:
-                    # barra de seleccion: numero y texto en NEGRO sobre el
-                    # color del tier. Los colores muy oscuros caen a blanco.
-                    bg = "white" if (col is None or col in _COLORES_OSCUROS) else col
-                    cursor_celda = (r, c_, f"  [{etiqueta:>{ncolw}}] {plain}", bg)
+                    # barra de seleccion: numero y texto en NEGRO sobre CYAN
+                    # (estilo de la fase de navegacion por flechas).
+                    cursor_celda = (r, c_, f"  [{etiqueta:>{ncolw}}] {plain}", "cyan")
                 else:
-                    celdas[r][c_] = f"[dim]  {numero} {label}[/]"
+                    celdas[r][c_] = f"  {numero} {label}"
         # alinear cada columna a su ancho maximo (incluyendo la seleccion)
         anchos = {}
         for c_ in range(ncol):

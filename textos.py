@@ -32,8 +32,7 @@ RESENAS_MENU = {
 RESENAS_DETALLE = {
     "pez": (
         "Verde = mejor precio de esa ciudad, rojo = el peor, N/D = sin "
-        "datos. Abajo, el resumen de mercado muestra datos objetivos, "
-        "sin recomendaciones."
+        "datos. Abajo, el resumen de mercado muestra datos objetivos."
     ),
     "recurso": (
         "Tiers bajos: comprar barato es bueno (verde). Tiers altos: vender "
