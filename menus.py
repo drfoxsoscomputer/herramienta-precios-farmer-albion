@@ -16,7 +16,6 @@ from rich.control import Control
 from rich.segment import Segment
 from rich.table import Table
 from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.text import Text
 from rich import box
 
@@ -228,7 +227,7 @@ def _mover_cursor(cursor, tecla, filas, n):
         return cursor
 
 
-def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None):
+def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None, es_raiz=False):
     """Selector numerado con flechas.
 
     opciones: lista de (label, desc) — label con markup Rich, desc resena
@@ -240,6 +239,8 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     cambia el atajo por teclado (las teclas se leen aparte).
     Devuelve int (indice 0-based), "0" (volver), "R" (reiniciar) o None
     (esc/q = cancelar).
+    es_raiz=True -> el hint dice "Esc salir" (la confirmacion la maneja
+    el llamador); False -> "Esc volver".
     """
     n = len(opciones)
     if filas is None:
@@ -290,7 +291,8 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
                     else:
                         _resena(item, dim=True)
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
-        console.print(f"  [dim]{col_hint}Arriba/Abajo mover · Enter elegir · 0/R atajos · Esc volver[/]")
+        esc_leyenda = "Esc salir" if es_raiz else "Esc volver"
+        console.print(f"  [dim]{col_hint}Arriba/Abajo mover · Enter elegir · {esc_leyenda} · R recargar[/]")
 
     primera = True
     while True:
@@ -362,6 +364,27 @@ def reiniciar():
     sys.exit(0)
 
 
+def _pausa_volver():
+    """Pantallas de detalle: espera UNA tecla sin prompt de texto.
+    Esc/Enter -> vuelve al listado; R -> recarga la app; el resto se ignora."""
+    while True:
+        tecla = _leer_tecla()
+        if tecla in ("esc", "enter"):
+            return
+        if tecla is not None and tecla.upper() == "R":
+            reiniciar()
+
+
+def _confirmar_salida():
+    """Raiz: pide confirmacion antes de salir. Enter confirma, Esc cancela."""
+    while True:
+        tecla = _leer_tecla()
+        if tecla == "enter":
+            return True
+        if tecla == "esc":
+            return False
+
+
 # ─── Menu Principal ───────────────────────────────────────────
 def menu_principal(config):
     nombres = ["Pesca", "Fibra", "Madera", "Cuero", "Mineral", "Piedra", "Salsas de pescado"]
@@ -380,13 +403,15 @@ def menu_principal(config):
         opciones.append(("Salir", ""))
 
         idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"],
-                              numeros=[str(i) for i in range(1, 8)] + ["R", "0"])
+                              numeros=[str(i) for i in range(1, 8)] + ["R", "0"], es_raiz=True)
 
-        if idx is None or idx == "0" or idx == 8:
-            console.print("\n[bold green]Que la plata te sobre![/]")
-            break
-        elif idx == "R" or idx == 7:
+        if idx == "R" or idx == 7:
             reiniciar()
+        elif idx is None or idx == "0" or idx == 8:
+            console.print("\n[bold yellow]¿Salir? [Enter] Confirmar · [Esc] Cancelar[/]")
+            if _confirmar_salida():
+                console.print("\n[bold green]Que la plata te sobre![/]")
+                break
         elif 0 <= idx <= 6:
             seccion = idx + 1
             if seccion == 1:
@@ -442,11 +467,8 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo):
 
     raw_data = get_prices([item_id, "T1_FISHCHOPS"])
     if not raw_data:
-        console.print("  [yellow][Enter][/] Volver al listado")
-        console.print("  [yellow][R][/] Reiniciar")
-        resp = Prompt.ask("Opcion", default="")
-        if resp.upper() == "R":
-            reiniciar()
+        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _pausa_volver()
         return
 
     prices = {}
@@ -575,11 +597,8 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo):
         rec_txt = f"  {icon}\n\n  [dim]Sin datos de precios actuales.[/]"
 
     console.print(Panel(rec_txt, title="[bold]Recomendacion[/]", border_style="green", box=box.HEAVY, title_align="left"))
-    console.print("  [yellow][Enter][/] Volver al listado")
-    console.print("  [yellow][R][/] Reiniciar")
-    resp = Prompt.ask("Opcion", default="")
-    if resp.upper() == "R":
-        reiniciar()
+    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    _pausa_volver()
 
 
 # ─── Recursos ─────────────────────────────────────────────────
@@ -663,11 +682,8 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
 
     raw_data = get_prices(item_ids)
     if not raw_data:
-        console.print("  [yellow][Enter][/] Volver")
-        console.print("  [yellow][R][/] Reiniciar")
-        resp = Prompt.ask("Opcion", default="")
-        if resp.upper() == "R":
-            reiniciar()
+        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _pausa_volver()
         return
 
     prices_map = {}
@@ -797,11 +813,8 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         txt = "\n".join(lineas).rstrip()
 
     console.print(Panel(txt, title="[bold]Observacion[/]", border_style="green", box=box.HEAVY, title_align="left"))
-    console.print("  [yellow][Enter][/] Volver")
-    console.print("  [yellow][R][/] Reiniciar")
-    resp = Prompt.ask("Opcion", default="")
-    if resp.upper() == "R":
-        reiniciar()
+    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    _pausa_volver()
 
 
 # ─── Salsas de pescado ────────────────────────────────────────
@@ -811,155 +824,146 @@ def menu_insumos_pesca(config):
         console.print("\n[red][!] Seccion no encontrada.[/]")
         return
 
-    id_to_nombre = _id_a_nombre(config)
     salsas = [(nombre, d["id"], d.get("receta", {}))
               for nombre, d in info["items"].items() if "Salsa" in nombre]
 
-    while True:
-        # Traer todo de una
-        salsa_ids = [s[1] for s in salsas]
-        fetch_ids = ["T1_FISHCHOPS", "T1_SEAWEED"] + salsa_ids
-        raw_data = get_prices(fetch_ids)
+    salsa_ids = [s[1] for s in salsas]
+    fetch_ids = ["T1_FISHCHOPS", "T1_SEAWEED"] + salsa_ids
+    raw_data = get_prices(fetch_ids)
 
-        if not raw_data:
-            limpiar_pantalla()
-            console.print("\n[bold cyan]>>> Salsas de pescado[/]\n")
-            console.print("  [red][!] Sin datos de mercado[/]")
-            console.print("\n  [yellow][0][/] Volver")
-            op = Prompt.ask("Opcion", default="0")
-            if op == "0":
-                return
+    if not raw_data:
+        limpiar_pantalla()
+        console.print("\n[bold cyan]>>> Salsas de pescado[/]\n")
+        console.print("  [red][!] Sin datos de mercado[/]")
+        console.print("\n  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _pausa_volver()
+        return
+
+    # Agrupar por item_id
+    precios_grp = {}
+    for entry in raw_data:
+        # Solo precios de calidad normal (1): el helper compara el item base.
+        if entry.get("quality", 1) != 1:
+            continue
+        precios_grp.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
+
+    alga_px = precios_grp.get("T1_SEAWEED", {})
+    carne_px = precios_grp.get("T1_FISHCHOPS", {})
+
+    # Mejores precios ingredientes para extra (comprar no aplica: usamos venta)
+    _, carne_max_vta = mejor_ciudad(carne_px)
+    _, alga_max_vta = mejor_ciudad(alga_px)
+
+    # Tabla combinada
+    tbl = Table(box=box.ROUNDED)
+    tbl.add_column("Ciudad", style="cyan")
+    for nombre, sid, _ in salsas:
+        nivel = int(sid.split("_LEVEL")[-1])
+        color = ENCH_COLORS[nivel]
+        nombre_corto = nombre.replace("Salsa ", "")
+        tbl.add_column(f"[{color}]{nombre_corto}[/]", justify="right")
+
+    for city in CITIES:
+        row = [city]
+        for _, sid, _ in salsas:
+            prices = precios_grp.get(sid, {})
+            val = prices.get(city, 0)
+            col_vals = [v for v in prices.values() if v > 0]
+            if val == 0:
+                row.append("[dim]N/D[/]")
+            elif not col_vals:
+                row.append(f"${format_price(val)}")
+            else:
+                if val == max(col_vals):
+                    row.append(f"[bold green]${format_price(val)}[/]")
+                elif val == min(col_vals):
+                    row.append(f"[red]${format_price(val)}[/]")
+                else:
+                    row.append(f"${format_price(val)}")
+        tbl.add_row(*row)
+
+    # Info por salsa en grid: salsa | receta | ciudad + precio + extra
+    grid = Table.grid(padding=(0, 3))
+    grid.add_column(no_wrap=True)
+    grid.add_column(no_wrap=True)
+    grid.add_column(no_wrap=True)
+    for nombre, sid, receta in salsas:
+        nivel = int(sid.split("_LEVEL")[-1])
+        color = ENCH_COLORS[nivel]
+        nombre_corto = nombre.replace("Salsa ", "")
+
+        salsa_px = precios_grp.get(sid, {})
+        salsa_vals = valores_positivos(salsa_px)
+        if not salsa_vals:
             continue
 
-        # Agrupar por item_id
-        precios_grp = {}
-        for entry in raw_data:
-            # Solo precios de calidad normal (1): el helper compara el item base.
-            if entry.get("quality", 1) != 1:
-                continue
-            precios_grp.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
+        ciudad_venta, mejor_venta = mejor_ciudad(salsa_px)
 
-        alga_px = precios_grp.get("T1_SEAWEED", {})
-        carne_px = precios_grp.get("T1_FISHCHOPS", {})
+        cant_carne = receta.get("T1_FISHCHOPS", 0)
+        cant_alga = receta.get("T1_SEAWEED", 0)
 
-        # Mejores precios ingredientes para extra (comprar no aplica: usamos venta)
-        _, carne_max_vta = mejor_ciudad(carne_px)
-        _, alga_max_vta = mejor_ciudad(alga_px)
+        valor_insumos = carne_max_vta * cant_carne + alga_max_vta * cant_alga
+        extra = mejor_venta - valor_insumos if valor_insumos > 0 else 0
+        pct_extra = pct(extra, valor_insumos)
 
-        # ── Mostrar ──
-        limpiar_pantalla()
-        console.print(f"\n[bold cyan]>>> Salsas de pescado[/]\n")
+        grid.add_row(
+            f"[{color}]{nombre_corto}[/]",
+            f"{cant_carne} Carne + {cant_alga} Alga",
+            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}  (extra +${extra:,}, {pct_extra:.1f}%)",
+        )
 
-        # Tabla combinada
-        tbl = Table(box=box.ROUNDED)
-        tbl.add_column("Ciudad", style="cyan")
-        for nombre, sid, _ in salsas:
+    # ── Volumen 7 dias en grid: salsa | total | top ciudad ──
+    console.print("[dim]Consultando historial...[/]")
+    hist_data = get_history(salsa_ids)
+    vol_grid = Table.grid(padding=(0, 3))
+    vol_grid.add_column(no_wrap=True)
+    vol_grid.add_column(no_wrap=True)
+    vol_grid.add_column(no_wrap=True)
+    hay_vol = False
+    for nombre, sid, _ in salsas:
+        hist = hist_data.get(sid, {})
+        vol_total = sum(h["volumen"] for h in hist.values())
+        if vol_total > 0:
+            hay_vol = True
             nivel = int(sid.split("_LEVEL")[-1])
             color = ENCH_COLORS[nivel]
             nombre_corto = nombre.replace("Salsa ", "")
-            tbl.add_column(f"[{color}]{nombre_corto}[/]", justify="right")
+            top = sorted(hist, key=lambda c: hist[c]["volumen"], reverse=True)[0]
+            vol_grid.add_row(
+                f"[{color}]{nombre_corto}[/]",
+                f"[bold]{vol_total:,}[/] uds",
+                f"{top}: {hist[top]['volumen']:,}",
+            )
+    vol_panel = (Panel(vol_grid, title="[bold]Volumen 7 dias[/]", border_style="cyan",
+                       box=box.ROUNDED, title_align="left") if hay_vol
+                 else Text("  [dim]Sin datos de historial[/]"))
 
-        for city in CITIES:
-            row = [city]
-            for _, sid, _ in salsas:
-                prices = precios_grp.get(sid, {})
-                val = prices.get(city, 0)
-                col_vals = [v for v in prices.values() if v > 0]
-                if val == 0:
-                    row.append("[dim]N/D[/]")
-                elif not col_vals:
-                    row.append(f"${format_price(val)}")
-                else:
-                    if val == max(col_vals):
-                        row.append(f"[bold green]${format_price(val)}[/]")
-                    elif val == min(col_vals):
-                        row.append(f"[red]${format_price(val)}[/]")
-                    else:
-                        row.append(f"${format_price(val)}")
-            tbl.add_row(*row)
-
-        console.print(tbl)
-
-        # Info por salsa en grid: salsa | receta | ciudad + precio + extra
-        console.print()
-        grid = Table.grid(padding=(0, 3))
-        grid.add_column(no_wrap=True)
-        grid.add_column(no_wrap=True)
-        grid.add_column(no_wrap=True)
-        for i, (nombre, sid, receta) in enumerate(salsas):
+    # Selector: la vista de mercado es el titulo; las salsas, las opciones
+    while True:
+        opciones = []
+        for nombre, sid, receta in salsas:
             nivel = int(sid.split("_LEVEL")[-1])
             color = ENCH_COLORS[nivel]
-            nombre_corto = nombre.replace("Salsa ", "")
-
-            salsa_px = precios_grp.get(sid, {})
-            salsa_vals = valores_positivos(salsa_px)
-            if not salsa_vals:
-                continue
-
-            ciudad_venta, mejor_venta = mejor_ciudad(salsa_px)
-
             cant_carne = receta.get("T1_FISHCHOPS", 0)
             cant_alga = receta.get("T1_SEAWEED", 0)
+            opciones.append((f"[{color}]{nombre}[/]", f"{cant_carne} Carne + {cant_alga} Alga"))
 
-            valor_insumos = carne_max_vta * cant_carne + alga_max_vta * cant_alga
-            extra = mejor_venta - valor_insumos if valor_insumos > 0 else 0
-            pct_extra = pct(extra, valor_insumos)
+        titulo = Group(
+            Panel("[bold cyan]Salsas de pescado[/]", border_style="cyan"),
+            tbl,
+            grid,
+            vol_panel,
+        )
 
-            grid.add_row(
-                f"[{color}]\\[{i+1}][/] [{color}]{nombre_corto}[/]",
-                f"{cant_carne} Carne + {cant_alga} Alga",
-                f"[bold]{ciudad_venta}[/] ${mejor_venta:,}  (extra +${extra:,}, {pct_extra:.1f}%)",
-            )
-        console.print(grid)
+        idx = _menu_seleccion(opciones, titulo=titulo, texto_bajo=RESENAS_MENU["insumos"])
 
-        console.print()
-
-        # ── Volumen 7 dias en grid: salsa | total | top ciudad ──
-        console.print()
-        console.print("[dim]Consultando historial...[/]")
-        salsa_ids = [s[1] for s in salsas]
-        hist_data = get_history(salsa_ids)
-        vol_grid = Table.grid(padding=(0, 3))
-        vol_grid.add_column(no_wrap=True)
-        vol_grid.add_column(no_wrap=True)
-        vol_grid.add_column(no_wrap=True)
-        hay_vol = False
-        for nombre, sid, _ in salsas:
-            hist = hist_data.get(sid, {})
-            vol_total = sum(h["volumen"] for h in hist.values())
-            if vol_total > 0:
-                hay_vol = True
-                nivel = int(sid.split("_LEVEL")[-1])
-                color = ENCH_COLORS[nivel]
-                nombre_corto = nombre.replace("Salsa ", "")
-                top = sorted(hist, key=lambda c: hist[c]["volumen"], reverse=True)[0]
-                vol_grid.add_row(
-                    f"[{color}]{nombre_corto}[/]",
-                    f"[bold]{vol_total:,}[/] uds",
-                    f"{top}: {hist[top]['volumen']:,}",
-                )
-
-        if hay_vol:
-            console.print(Panel(vol_grid, title="[bold]Volumen 7 dias[/]", border_style="cyan", box=box.ROUNDED, title_align="left"))
-        else:
-            console.print("  [dim]Sin datos de historial[/]")
-
-        console.print()
-        _resena(RESENAS_MENU["insumos"])
-        console.print("  [yellow][1][2][3][/] Ver detalle  |  [yellow][0][/] Volver  |  [yellow][R][/] Reiniciar")
-        op = Prompt.ask("Opcion", default="0")
-
-        if op == "0":
+        if idx is None:
             return
-        elif op.upper() == "R":
+        elif idx == "R":
             reiniciar()
-        elif op in ("1", "2", "3"):
-            idx = int(op) - 1
-            if idx < len(salsas):
-                nombre, sid, _ = salsas[idx]
-                ver_detalle_insumo(nombre, sid, config)
         else:
-            console.print("[red][!] Opcion invalida[/]")
+            nombre, sid, _ = salsas[idx]
+            ver_detalle_insumo(nombre, sid, config)
 
 
 def _acortar_nombre(nombre):
@@ -1022,11 +1026,8 @@ def ver_detalle_insumo(nombre, item_id, config):
 
     raw_data = get_prices(fetch_ids)
     if not raw_data:
-        console.print("  [yellow][Enter][/] Volver")
-        console.print("  [yellow][R][/] Reiniciar")
-        resp = Prompt.ask("Opcion", default="")
-        if resp.upper() == "R":
-            reiniciar()
+        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _pausa_volver()
         return
 
     # Agrupar precios por item_id
@@ -1181,8 +1182,5 @@ def ver_detalle_insumo(nombre, item_id, config):
         ))
 
     console.print()
-    console.print("  [yellow][Enter][/] Volver")
-    console.print("  [yellow][R][/] Reiniciar")
-    resp = Prompt.ask("Opcion", default="")
-    if resp.upper() == "R":
-        reiniciar()
+    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    _pausa_volver()
