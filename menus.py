@@ -5,6 +5,7 @@
 # el usuario ejecuto), NO __file__, porque este archivo no es el
 # punto de entrada.
 
+import io
 import os
 import subprocess
 import sys
@@ -28,15 +29,18 @@ from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONE
 console = Console()
 
 
-def _resena(texto, dim=True):
+def _resena(texto, dim=True, c=None):
     """Muestra una resena de ayuda. dim=True -> gris tenue;
-    dim=False -> texto con sus propios colores (leyenda de tiers)."""
+    dim=False -> texto con sus propios colores (leyenda de tiers).
+    c=None usa la consola global; pasando `c` se puede renderizar
+    a un buffer (para el diferenciador de lineas)."""
     if texto:
+        c = c or console
         if dim:
-            console.print(f"  [dim]{texto}[/]")
+            c.print(f"  [dim]{texto}[/]")
         else:
-            console.print(f"  {texto}")
-        console.print()
+            c.print(f"  {texto}")
+        c.print()
 
 
 class _RawControl(Control):
@@ -108,20 +112,32 @@ def limpiar_pantalla():
     console.control(_RawControl("\x1b[2J\x1b[H"))
 
 
-def _ir_inicio():
-    """Mueve el cursor a home SIN borrar la pantalla.
+def _escribir_fila(fila, texto):
+    """Escribe UNA linea del frame en su fila (0-based) sin tocar el resto.
 
-    Para redibujar durante la navegacion: pinta encima del frame anterior
-    (mismo numero de lineas), asi NO hay flash ni salto de pantalla.
+    ANSI puro: mueve el cursor a la fila, escribe el texto (que ya trae sus
+    colores ANSI del render en buffer) y borra hasta el final de la linea.
+    Asi la navegacion no re-dibuja todo el frame: solo las filas que cambiaron.
     """
-    h = _consola_handle()
-    if h is not None:
-        try:
-            if _kernel32.SetConsoleCursorPosition(h, _COORD(0, 0)):
-                return
-        except Exception:
-            pass
-    console.control(_RawControl("\x1b[H"))
+    console.control(_RawControl(f"\x1b[{fila + 1};1H{texto}\x1b[K"))
+    try:
+        console.file.flush()
+    except Exception:
+        pass
+
+
+def _repintar_diff(lineas, prev):
+    """Reescribe SOLO las lineas que cambiaron entre el frame anterior y el nuevo.
+
+    En un menu, por tecla cambian 1-3 filas (la del cursor y la descripcion):
+    el resto del frame queda intacto -> cero parpadeo.
+    """
+    max_ln = max(len(lineas), len(prev))
+    for i in range(max_ln):
+        nueva = lineas[i] if i < len(lineas) else ""
+        vieja = prev[i] if i < len(prev) else ""
+        if nueva != vieja:
+            _escribir_fila(i, nueva)
 
 
 def _leer_tecla(espera=0):
@@ -257,61 +273,91 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     if numeros is not None:
         atajos_digitos = {etiq: i for i, etiq in enumerate(numeros) if etiq.isdigit()}
 
-    def render_grid():
+    def render_grid(c=None):
+        c = c or console
         celdas = [[""] * ncol for _ in range(filas)]
         for r in range(filas):
-            for c in range(ncol):
-                idx = c * filas + r
+            for c_ in range(ncol):
+                idx = c_ * filas + r
                 if idx >= n:
                     break
                 label, _ = opciones[idx]
                 etiqueta = str(idx + 1 if numeros is None else numeros[idx])
                 numero = f"[yellow][{etiqueta:>{ncolw}}][/]"
                 if idx == cursor:
-                    celdas[r][c] = f"[bold cyan]\u25b8[/] {numero} [bold]{label}[/]"
+                    celdas[r][c_] = f"[bold cyan]\u25b8[/] {numero} [bold]{label}[/]"
                 else:
-                    celdas[r][c] = f"  {numero} {label}"
+                    celdas[r][c_] = f"  {numero} {label}"
         # alinear cada columna a su ancho maximo
-        for c in range(ncol):
-            ancho = max((len(Text.from_markup(celdas[r][c]).plain)
-                         for r in range(filas) if celdas[r][c]), default=0)
+        for c_ in range(ncol):
+            ancho = max((len(Text.from_markup(celdas[r][c_]).plain)
+                         for r in range(filas) if celdas[r][c_]), default=0)
             for r in range(filas):
-                if celdas[r][c]:
-                    celdas[r][c] += " " * (ancho - len(Text.from_markup(celdas[r][c]).plain))
+                if celdas[r][c_]:
+                    celdas[r][c_] += " " * (ancho - len(Text.from_markup(celdas[r][c_]).plain))
         for r in range(filas):
-            console.print("    ".join(celdas[r][c] for c in range(ncol) if celdas[r][c]))
+            fila_txt = []
+            for c_ in range(ncol):
+                if not celdas[r][c_]:
+                    continue
+                idx = c_ * filas + r
+                celda = celdas[r][c_]
+                if idx == cursor:
+                    # resaltar la opcion seleccionada: fondo cyan + letra negra
+                    celda = f"[black on cyan]{Text.from_markup(celda).plain}[/]"
+                fila_txt.append(celda)
+            c.print("    ".join(fila_txt))
 
-    def footer():
+    def footer(c=None):
+        c = c or console
         # La linea de descripcion SIEMPRE se reserva (aunque este vacia)
         # para que la pantalla no cambie de altura al navegar.
         _, desc = opciones[cursor]
-        console.print(f"  [dim]{desc}[/]" if desc else "")
+        c.print(f"  [dim]{desc}[/]" if desc else "")
         if texto_bajo:
             if isinstance(texto_bajo, str):
-                _resena(texto_bajo, dim=True)
+                _resena(texto_bajo, dim=True, c=c)
             else:
                 for item in texto_bajo:
                     if isinstance(item, tuple):
                         txt, dim = item
-                        _resena(txt, dim=dim)
+                        _resena(txt, dim=dim, c=c)
                     else:
-                        _resena(item, dim=True)
+                        _resena(item, dim=True, c=c)
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
-        esc_leyenda = "Esc salir" if es_raiz else "Esc volver"
-        console.print(f"  [dim]{col_hint}Arriba/Abajo mover · Enter elegir · {esc_leyenda} · R recargar[/]")
+        esc_tecla, esc_accion = ("Esc", "salir") if es_raiz else ("Esc", "volver")
+        c.print(f"  [dim]{col_hint}Arriba/Abajo mover · [yellow]Enter[/] elegir · [yellow]{esc_tecla}[/] {esc_accion} · [yellow]R[/] recargar")
 
     primera = True
+    lineas_prev = None
     while True:
-        if primera:
-            limpiar_pantalla()  # primera pasada: borra todo
+        # ── Renderizar el frame completo en un buffer (misma logica visual) ──
+        ancho = console.width if console.width else 120
+        alto = console.height if console.height else 50
+        buf = io.StringIO()
+        fc = Console(file=buf, force_terminal=True, width=ancho, height=alto)
+        fc.print(titulo)
+        fc.print()
+        render_grid(fc)
+        fc.print()
+        footer(fc)
+        lineas = buf.getvalue().split("\n")
+        while lineas and lineas[-1] == "":
+            lineas.pop()
+
+        if primera or lineas_prev is None or len(lineas) > alto:
+            # primer frame (o frame mas alto que la terminal): redibujo completo
+            limpiar_pantalla()
+            console.control(_RawControl("\n".join(lineas) + "\n"))
+            try:
+                console.file.flush()
+            except Exception:
+                pass
             primera = False
         else:
-            _ir_inicio()  # redibujado: pinta encima, sin flash
-        console.print(titulo)
-        console.print()
-        render_grid()
-        console.print()
-        footer()
+            # navegacion: reescribir solo las filas que cambiaron (sin parpadeo)
+            _repintar_diff(lineas, lineas_prev)
+        lineas_prev = lineas
 
         tecla = _leer_tecla()
         if tecla is None:
