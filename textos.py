@@ -29,7 +29,7 @@ RESENAS_MENU = {
 # ─── Resenas de las pantallas de detalle (bajo el titulo) ──────
 RESENAS_DETALLE = {
     "pez": (
-        "Verde = mejor precio de esa ciudad, rojo = el peor, N/D = sin "
+        "Verde = el mayor precio de esa ciudad, rojo = el menor, N/D = sin "
         "datos. Abajo, el resumen de mercado muestra datos objetivos."
     ),
     "recurso": (
