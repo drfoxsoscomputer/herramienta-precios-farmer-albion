@@ -50,11 +50,17 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
   - [ ] E: cambio de servidor (west=America / east=Europa / asia=Asia; hoy fijo en constants.py)
   - Estado: propuesta sdd-propose LANZADA y ABORTADA por el usuario ("seguimos luego").
   - Retomar: relanzar sdd-propose con el prompt guardado en Engram topic `sdd/albion-v2/propose-prompt` (#157); estado en `sdd/albion-v2/estado-sesion` (#156).
+- [x] Propuesta aprobada (reencuadrada: resumen informativo en vez de recomendacion, sin SQLite/IA)
+- [x] Specs creadas (5: test-migration, resource-t8, market-summary, global-search, server-selection) en openspec/specs/
+- [x] Diseño técnico materializado por el orquestador (design.md) — el sub-agente sdd-design fallo 2x (reporte vacio)
+- [x] CAUSA RAIZ arreglada: agentes sdd-* usaban modelo north-mini-code-free (reportes vacios) → cambiados a deepseek-v4-flash-free en ~/.config/opencode/opencode.json (PENDIENTE: reiniciar opencode para aplicar)
 - [ ] Probar la herramienta en la practica con pescados (usuario)
 - [ ] Continuar con recursos: fibra, madera, cuero, mineral (usuario probara)
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
 
 ## Decisiones recientes
+- CAUSA RAIZ sub-agentes: sdd-* de fases complejas usaban north-mini-code-free (reportes vacios) → deepseek-v4-flash-free (2026-08-01)
+- Diseño v2: get_server_base() en api.py, cache sin invalidacion (URL incluye servidor), market_summary() en formatting.py devolviendo dict, normalizar() con unicodedata, buscador plan B catalogo local, selected_server en config (2026-08-01)
 - CAMBIO v2 acordado: T8 recursos + regla ingredientes + buscador global (ignora acentos, API) + historial/favoritos + cambio de servidor (2026-08-01)
 - API Albion tiene 3 servidores por subdominio: west (America), east (Europa), asia (Asia) — hoy fija a west (2026-08-01)
 - SDD init hecho: openspec/ + Engram sdd-init/albion; sin pytest -> strict_tdd: false (2026-08-01)
