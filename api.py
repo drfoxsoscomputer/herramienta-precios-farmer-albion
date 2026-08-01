@@ -15,20 +15,44 @@ from rich.console import Console
 
 console = Console()
 
+# ─── Cache en memoria (TTL 60s) ────────────────────────────────
+# La API de Albion limita a 180 req/min. Cada detalle hace 3 llamadas
+# en rafaga (precios + 2 historiales); cacheando la URL, navegar de
+# nuevo al mismo pez no vuelve a golpear la red.
+CACHE_TTL = 60
+_cache = {}  # url -> (timestamp, data)
+
+
+def _cache_get(url):
+    item = _cache.get(url)
+    if item and time.time() - item[0] < CACHE_TTL:
+        return item[1]
+    return None
+
+
+def _cache_put(url, data):
+    _cache[url] = (time.time(), data)
+
 
 def _fetch_json(url, timeout):
-    """Descarga JSON de una URL con reintentos. Devuelve datos o None."""
+    """Descarga JSON de una URL con cache + reintentos. Devuelve datos o None."""
+    cached = _cache_get(url)
+    if cached is not None:
+        return cached
+
     for intento in range(3):
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             context = ssl._create_unverified_context()
             with urllib.request.urlopen(req, timeout=timeout, context=context) as r:
-                return json.loads(r.read().decode())
+                data = json.loads(r.read().decode())
+                _cache_put(url, data)
+                return data
         except urllib.error.HTTPError as e:
             # 429 = rate limit de la API Albion (180 req/min):
-            # esperamos 2s y reintentamos, hasta 3 intentos totales.
+            # esperamos (2s, 4s) y reintentamos, hasta 3 intentos totales.
             if e.code == 429 and intento < 2:
-                time.sleep(2)
+                time.sleep(2 * (intento + 1))
                 continue
             console.print(f"\n[red][!] Error de red: {e.code} {e.reason}[/]")
             return None
