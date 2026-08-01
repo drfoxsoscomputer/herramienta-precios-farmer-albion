@@ -235,12 +235,12 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     filas None -> una sola columna. Con filas se usa grid column-major
     (item = columna * filas + fila), igual que el reparto de la lista.
     numeros: lista opcional con la etiqueta a mostrar por opcion (ej:
-    ["1","2","R","0"]). Por defecto numera 1..n. El numero mostrado NO
-    cambia el atajo por teclado (las teclas se leen aparte).
+    ["1","2","R"]). Por defecto numera 1..n. Solo responden los DIGITOS
+    que se muestran como etiqueta; un digito no visible se ignora (evita
+    atajos ocultos que parecen bugs). Con numeros no hay acumulacion de
+    digitos multiples.
     Devuelve int (indice 0-based), "R" (reiniciar) o None (esc/q = cancelar).
-    es_raiz=True -> el hint dice "Esc salir" y la tecla 0 devuelve "0"
-    (la raiz la usa como Salir); False -> "Esc volver" y la tecla 0 se
-    IGNORA (no es atajo en submenus, para que no parezca un bug).
+    es_raiz=True -> el hint dice "Esc salir"; False -> "Esc volver".
     """
     n = len(opciones)
     if filas is None:
@@ -250,6 +250,12 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     ncolw = max(len(str(n)), 2)
     cursor = 0
     digitos = ""  # acumula numeros de 2 digitos (ej: "34")
+    # Con numeros custom solo responden los DIGITOS visibles como etiqueta;
+    # un digito no mostrado (ej: 8/9/0 sin etiqueta) se ignora: evita atajos
+    # ocultos que parecen bugs. Sin numeros, la numeracion es posicional 1..n.
+    atajos_digitos = None
+    if numeros is not None:
+        atajos_digitos = {etiq: i for i, etiq in enumerate(numeros) if etiq.isdigit()}
 
     def render_grid():
         celdas = [[""] * ncol for _ in range(filas)]
@@ -325,11 +331,14 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
             cursor = _mover_cursor(cursor, tecla, filas, n)
         elif tecla.upper() == "R":
             return "R"
-        elif tecla == "0":
-            if es_raiz:
-                return "0"
-            continue  # submenu: 0 no es atajo, se ignora (no parecer bug)
         elif tecla.isdigit():
+            if atajos_digitos is not None:
+                # solo responden los digitos que se VEN como etiqueta
+                if tecla in atajos_digitos:
+                    return atajos_digitos[tecla]
+                continue  # digito no visible -> ignorado (no parecer bug)
+            if tecla == "0":
+                continue  # 0 nunca es item valido; se ignora sin consumir la siguiente tecla
             # numero directo; con n>9 acumula digitos (ej: "34") con timeout
             if n > 9:
                 digitos += tecla
@@ -402,14 +411,13 @@ def menu_principal(config):
         for i, nombre in enumerate(nombres, start=1):
             opciones.append((nombre, RESENAS_OPCIONES_PRINCIPAL[i]))
         opciones.append(("Reiniciar (recargar cambios)", ""))
-        opciones.append(("Salir", ""))
 
         idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"],
-                              numeros=[str(i) for i in range(1, 8)] + ["R", "0"], es_raiz=True)
+                              numeros=[str(i) for i in range(1, 8)] + ["R"], es_raiz=True)
 
         if idx == "R" or idx == 7:
             reiniciar()
-        elif idx is None or idx == "0" or idx == 8:
+        elif idx is None:
             console.print("\n[bold yellow]¿Salir? [Enter] Confirmar · [Esc] Cancelar[/]")
             if _confirmar_salida():
                 console.print("\n[bold green]Que la plata te sobre![/]")
