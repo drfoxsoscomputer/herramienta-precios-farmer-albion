@@ -25,6 +25,8 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - `ESTADO.md` — este archivo (memoria viva del proyecto)
 
 ## Estado actual
+- Protocolo de continuidad global activo (AGENTS.md global): ESTADO.md + CodeGraph + responsabilidad de subagentes
+- CodeGraph indexado en `.codegraph/` (6 archivos, 105 nodos) — regenerar con `codegraph update` tras cambios estructurales
 - Selector con flechas + numeros en todos los menus (grid 2 columnas en pesca/recursos)
 - Navegacion unificada: flechas mover, Enter elegir, R recargar (global), Esc volver (raiz: confirmacion para salir)
 - Render SIN parpadeo: diferenciador de lineas (reescribe solo filas cambiadas, ANSI puro)
@@ -41,6 +43,8 @@ Windows, consola compatible con VT (Windows Terminal / cmd de Win10+).
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
 
 ## Decisiones recientes
+- Protocolo anti-limbo global: ESTADO.md por proyecto + codegraph + verificar subagentes (2026-08-01)
+- `.atl/` y `.codegraph/` en .gitignore (artefactos de tooling regenerables) (2026-08-01)
 - Selector sin parpadeo: frame a buffer + reescribir solo filas cambiadas (2026-08-01)
 - Barra de seleccion = color del tier, texto negro; oscuros -> blanco (2026-08-01)
 - T6 dark_orange -> truecolor 208 (Rich degradaba a amarillo en 16 colores) (2026-08-01)
