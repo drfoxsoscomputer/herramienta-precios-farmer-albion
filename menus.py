@@ -28,6 +28,17 @@ from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONE
 
 console = Console()
 
+# Colores de etiqueta "oscuros": sobre ellos el texto negro no lee bien,
+# asi que la barra de seleccion cae a fondo blanco (texto negro igual).
+_COLORES_OSCUROS = frozenset({
+    "black", "grey0", "grey3", "grey7", "grey11", "grey15", "grey19",
+    "grey23", "grey27", "grey30", "grey35", "grey37", "grey39", "grey42",
+    "grey46", "grey50", "grey54", "grey58",
+    "dark_red", "dark_green", "dark_blue", "dark_magenta", "dark_cyan",
+    "dark_violet", "dark_goldenrod", "dark_sea_green",
+    "dark_slate_gray", "dark_slate_blue",
+})
+
 
 def _resena(texto, dim=True, c=None):
     """Muestra una resena de ayuda. dim=True -> gris tenue;
@@ -273,9 +284,22 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     if numeros is not None:
         atajos_digitos = {etiq: i for i, etiq in enumerate(numeros) if etiq.isdigit()}
 
+    # Color y texto plano de cada label, computados UNA vez (no cambian).
+    # El numero [ x] lleva el MISMO color que el texto de su opcion.
+    _labels = []
+    for label, _ in opciones:
+        t = console.render_str(label)
+        segs = list(t.render(console))
+        col = None
+        if segs:
+            st = segs[0].style
+            col = st.color.name if (st and st.color) else None
+        _labels.append((col, t.plain))
+
     def render_grid(c=None):
         c = c or console
         celdas = [[""] * ncol for _ in range(filas)]
+        cursor_celda = None  # (r, c_, contenido_plain_sin_pad, bg) de la seleccion
         for r in range(filas):
             for c_ in range(ncol):
                 idx = c_ * filas + r
@@ -283,29 +307,33 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
                     break
                 label, _ = opciones[idx]
                 etiqueta = str(idx + 1 if numeros is None else numeros[idx])
-                numero = f"[yellow][{etiqueta:>{ncolw}}][/]"
+                col, plain = _labels[idx]
+                numero = (f"[{col}][{etiqueta:>{ncolw}}][/]" if col
+                          else f"[{etiqueta:>{ncolw}}]")
                 if idx == cursor:
-                    celdas[r][c_] = f"[bold cyan]\u25b8[/] {numero} [bold]{label}[/]"
+                    # barra de seleccion: numero y texto en NEGRO sobre el
+                    # color del tier. Los colores muy oscuros caen a blanco.
+                    bg = "white" if (col is None or col in _COLORES_OSCUROS) else col
+                    cursor_celda = (r, c_, f"  [{etiqueta:>{ncolw}}] {plain}", bg)
                 else:
-                    celdas[r][c_] = f"  {numero} {label}"
-        # alinear cada columna a su ancho maximo
+                    celdas[r][c_] = f"[dim]  {numero} {label}[/]"
+        # alinear cada columna a su ancho maximo (incluyendo la seleccion)
+        anchos = {}
         for c_ in range(ncol):
-            ancho = max((len(Text.from_markup(celdas[r][c_]).plain)
-                         for r in range(filas) if celdas[r][c_]), default=0)
+            w_list = ([len(cursor_celda[2])] if (cursor_celda and cursor_celda[1] == c_) else [])
+            w_list += [len(Text.from_markup(celdas[r][c_]).plain)
+                       for r in range(filas) if celdas[r][c_]]
+            anchos[c_] = max(w_list) if w_list else 0
+        for c_ in range(ncol):
             for r in range(filas):
                 if celdas[r][c_]:
-                    celdas[r][c_] += " " * (ancho - len(Text.from_markup(celdas[r][c_]).plain))
+                    celdas[r][c_] += " " * (anchos[c_] - len(Text.from_markup(celdas[r][c_]).plain))
+        if cursor_celda is not None:
+            r, c_, contenido, bg = cursor_celda
+            # el padding va DENTRO de la barra para que el fondo cubra todo
+            celdas[r][c_] = f"[black on {bg}]{contenido.ljust(anchos[c_])}[/]"
         for r in range(filas):
-            fila_txt = []
-            for c_ in range(ncol):
-                if not celdas[r][c_]:
-                    continue
-                idx = c_ * filas + r
-                celda = celdas[r][c_]
-                if idx == cursor:
-                    # resaltar la opcion seleccionada: fondo cyan + letra negra
-                    celda = f"[black on cyan]{Text.from_markup(celda).plain}[/]"
-                fila_txt.append(celda)
+            fila_txt = [celdas[r][c_] for c_ in range(ncol) if celdas[r][c_]]
             c.print("    ".join(fila_txt))
 
     def footer(c=None):
@@ -335,7 +363,13 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
         ancho = console.width if console.width else 120
         alto = console.height if console.height else 50
         buf = io.StringIO()
-        fc = Console(file=buf, force_terminal=True, width=ancho, height=alto)
+        # highlight=False: Rich NO pinta los numeros en bold-cyan (repr.number).
+        # color_system="truecolor": si se detecta "windows"/"standard" (16 colores,
+        # como hace Rich sobre un buffer StringIO) los colores 8-bit (dark_orange,
+        # grey58) degradan a amarillo/gris apagado. Windows 10+ soporta VT 24-bit,
+        # asi que forzamos truecolor para que T6 se vea naranja de verdad.
+        fc = Console(file=buf, force_terminal=True, width=ancho, height=alto,
+                     highlight=False, color_system="truecolor")
         fc.print(titulo)
         fc.print()
         render_grid(fc)
@@ -456,12 +490,13 @@ def menu_principal(config):
         opciones = []
         for i, nombre in enumerate(nombres, start=1):
             opciones.append((nombre, RESENAS_OPCIONES_PRINCIPAL[i]))
-        opciones.append(("Reiniciar (recargar cambios)", ""))
 
+        # Reiniciar NO es un item del menu: la tecla R ya recarga desde
+        # cualquier pantalla (lo dice el hint), un item visible seria duplicar.
         idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"],
-                              numeros=[str(i) for i in range(1, 8)] + ["R"], es_raiz=True)
+                              es_raiz=True)
 
-        if idx == "R" or idx == 7:
+        if idx == "R":
             reiniciar()
         elif idx is None:
             console.print("\n[bold yellow]¿Salir? [Enter] Confirmar · [Esc] Cancelar[/]")
