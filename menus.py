@@ -237,10 +237,10 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
     numeros: lista opcional con la etiqueta a mostrar por opcion (ej:
     ["1","2","R","0"]). Por defecto numera 1..n. El numero mostrado NO
     cambia el atajo por teclado (las teclas se leen aparte).
-    Devuelve int (indice 0-based), "0" (volver), "R" (reiniciar) o None
-    (esc/q = cancelar).
-    es_raiz=True -> el hint dice "Esc salir" (la confirmacion la maneja
-    el llamador); False -> "Esc volver".
+    Devuelve int (indice 0-based), "R" (reiniciar) o None (esc/q = cancelar).
+    es_raiz=True -> el hint dice "Esc salir" y la tecla 0 devuelve "0"
+    (la raiz la usa como Salir); False -> "Esc volver" y la tecla 0 se
+    IGNORA (no es atajo en submenus, para que no parezca un bug).
     """
     n = len(opciones)
     if filas is None:
@@ -326,7 +326,9 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
         elif tecla.upper() == "R":
             return "R"
         elif tecla == "0":
-            return "0"
+            if es_raiz:
+                return "0"
+            continue  # submenu: 0 no es atajo, se ignora (no parecer bug)
         elif tecla.isdigit():
             # numero directo; con n>9 acumula digitos (ej: "34") con timeout
             if n > 9:
@@ -447,7 +449,7 @@ def menu_pesca(config):
             opciones.append((f"[{color}]{nombre}[/]", ""))
         idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(peces) + 1) // 2,
                               texto_bajo=[RESENAS_MENU["pesca"], (LEYENDA_TIERS, False)])
-        if idx is None or idx == "0":
+        if idx is None:
             return
         elif idx == "R":
             reiniciar()
@@ -637,7 +639,7 @@ def ver_recurso(config, tipo):
             opciones.append((f"[{color}]{item['label']}[/]", ""))
         idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(menu_items) + 1) // 2,
                               texto_bajo=[RESENAS_MENU["recursos"], (LEYENDA_TIERS, False)])
-        if idx is None or idx == "0":
+        if idx is None:
             return
         elif idx == "R":
             reiniciar()
