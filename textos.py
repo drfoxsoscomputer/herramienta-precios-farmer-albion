@@ -52,7 +52,6 @@ RESUMEN = {
     "uso": "Se usa en",
     "ingrediente": "Es ingrediente de",
     "no_ingrediente": "No es ingrediente de ninguna salsa",
-    "diferencia": "Diferencia refinado - crudo",
     "sin_datos": "Sin datos de venta",
 }
 

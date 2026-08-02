@@ -46,8 +46,8 @@ def _resena(texto, dim=True, c=None):
 def _panel_resumen(resumen, mostrar_ingrediente=False, uso=""):
     """Panel informativo con los datos de market_summary.
 
-    Solo datos objetivos (min/max, ingrediente, diferencia refinado - crudo).
-    NUNCA recomienda acciones: el usuario decide.
+    Solo datos objetivos (min/max, ingrediente). NUNCA recomienda acciones:
+    el usuario decide.
     mostrar_ingrediente=False oculta la linea de ingrediente (ej: recursos,
     que no participan de salsas).
     uso="" oculta la linea de uso ("Se usa en ..."); pasar un nombre de plato
@@ -70,10 +70,6 @@ def _panel_resumen(resumen, mostrar_ingrediente=False, uso=""):
             lineas.append(f"  [dim]{RESUMEN['no_ingrediente']}[/]")
     if uso:
         lineas.append(f"  {RESUMEN['uso']}:  [bold]{uso}[/]")
-    if resumen.get("diferencia_refinado") is not None:
-        diff = resumen["diferencia_refinado"]
-        signo = "+" if diff >= 0 else ""
-        lineas.append(f"  {RESUMEN['diferencia']}:  [bold]{signo}{diff:,}[/]")
     if not lineas:
         lineas.append("  [dim]Sin datos de mercado[/]")
     console.print(Panel(
@@ -803,7 +799,6 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         tbl.add_column(ref_nombre, justify="right")
         for e in (".1", ".2", ".3", ".4"):
             tbl.add_column(e, justify="right")
-        tbl.add_column("Dif", justify="right")
 
         for city in CITIES:
             row = [city]
@@ -814,13 +809,6 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
                 val = prices_map.get(eid, {}).get(city, 0)
                 vals = [prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0]
                 row.append(color_item(val, vals))
-            # Dif: ref base vs plano base (solo si tenemos ambos datos)
-            diff = ""
-            plano_p = prices_map.get(crudo_id, {}).get(city, 0)
-            if ref > 0 and plano_p > 0:
-                gan = ref - plano_p
-                diff = f"[{color_signo(gan)}]{gan:+,}[/]"
-            row.append(diff)
             tbl.add_row(*row)
         console.print(tbl)
 
@@ -891,8 +879,6 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     console.print(Panel(txt, title="[bold]Precio mayor y menor por ciudad[/]", border_style="green", box=box.HEAVY, title_align="left"))
 
     # ─── Resumen de mercado (informativo, sin recomendaciones) ──
-    # En modo crudo no hay par crudo/refinado en precios ->
-    # diferencia_refinado queda en None (no se muestra).
     item_vista = refinado_id if modo == "refinado" else crudo_id
     resumen = market_summary(prices_map, item_vista)
     console.print()

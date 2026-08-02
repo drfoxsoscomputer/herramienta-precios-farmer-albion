@@ -3,10 +3,6 @@
 # Funciones PURAS: todo lo que necesitan entra por parametros.
 # No tocan la red, no leen config, no imprimen por si solas.
 
-# Sufijos de item_id que identifican un producto REFINADO de recurso.
-# Con esto market_summary detecta el par crudo/refinado del mismo tier.
-_SUFIJOS_REFINADO = frozenset({"CLOTH", "PLANKS", "LEATHER", "METALBAR", "STONEBLOCK"})
-
 def format_price(val):
     if val is None or val == 0:
         return "N/D"
@@ -88,31 +84,6 @@ def color_signo(valor):
 
 # ─── Resumen de mercado (Fase B) ───────────────────────────────
 
-def _diferencia_refinado(precios):
-    """Precio refinado - crudo como dato (None si no hay par claro).
-
-    Busca en precios dos items BASE (sin encantamientos .1-.4) del mismo
-    tier donde uno es refinado (sufijo en _SUFIJOS_REFINADO) y el otro no.
-    Devuelve (mejor precio refinado) - (mejor precio crudo), o None.
-    """
-    base = {}
-    for iid, ciudades in (precios or {}).items():
-        if "_LEVEL" in iid or "@" in iid:
-            continue  # encantamientos no cuentan como par
-        base.setdefault(iid.split("_", 1)[0], []).append(iid)
-    for tier, ids in base.items():
-        if len(ids) != 2:
-            continue
-        crudo = [i for i in ids if i.rsplit("_", 1)[-1] not in _SUFIJOS_REFINADO]
-        refinado = [i for i in ids if i.rsplit("_", 1)[-1] in _SUFIJOS_REFINADO]
-        if len(crudo) == 1 and len(refinado) == 1:
-            best_c = max((v for v in precios[crudo[0]].values() if v > 0), default=0)
-            best_r = max((v for v in precios[refinado[0]].values() if v > 0), default=0)
-            if best_c > 0 and best_r > 0:
-                return best_r - best_c
-    return None
-
-
 def market_summary(precios, item, recetas_config=None):
     """Resumen informativo de mercado (FUNCION PURA: sin red, sin imprimir).
 
@@ -122,7 +93,6 @@ def market_summary(precios, item, recetas_config=None):
       min_ciudad / max_ciudad -> ciudad donde se da cada extremo ("" si
                                  no hay datos; primer match iterando precios)
       es_ingrediente / recetas-> si el item es ingrediente de alguna salsa
-      diferencia_refinado     -> precio refinado - crudo (solo recursos)
       sin_datos               -> True si no hay precio de venta
 
     precios: {item_id: {ciudad: sell_price_min}} (lo que ya arma la UI).
@@ -154,9 +124,6 @@ def market_summary(precios, item, recetas_config=None):
                     es_ingrediente = True
                     recetas.append(nombre)
 
-    # ── Diferencia refinado - crudo (solo si precios trae el par) ──
-    diferencia_refinado = _diferencia_refinado(precios)
-
     sin_datos = (max_venta == 0)
 
     return {
@@ -166,6 +133,5 @@ def market_summary(precios, item, recetas_config=None):
         "max_ciudad": max_ciudad,
         "es_ingrediente": es_ingrediente,
         "recetas": recetas,
-        "diferencia_refinado": diferencia_refinado,
         "sin_datos": sin_datos,
     }

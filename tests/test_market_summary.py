@@ -17,7 +17,7 @@ CITIES = ["Thetford", "Lymhurst", "Fort Sterling", "Bridgewatch", "Martlock"]
 SHARK = "T8_FISH_SALTWATER_ALL_BOSS_SHARK"
 
 CLAVES = ("min_venta", "max_venta", "min_ciudad", "max_ciudad",
-          "es_ingrediente", "recetas", "diferencia_refinado", "sin_datos")
+          "es_ingrediente", "recetas", "sin_datos")
 
 
 # ── 1. pez con datos: min/max visibles + contrato de claves ────
@@ -48,17 +48,7 @@ r = market_summary({}, SHARK)  # sin config -> no se evalua
 assert r["es_ingrediente"] is False and r["recetas"] == [], r
 print("PASS ingrediente si/no: T1_FISHCHOPS en 3 salsas; tiburon no")
 
-# ── 4. diferencia refinado - crudo (solo recursos con par) ─────
-precios_par = {"T8_FIBER": {"Thetford": 500, "Lymhurst": 600},
-               "T8_CLOTH": {"Thetford": 800, "Lymhurst": 700}}
-r = market_summary(precios_par, "T8_CLOTH")
-assert r["diferencia_refinado"] == 200, f"diferencia: {r}"  # 800 - 600
-precios_sin_par = {SHARK: {"Thetford": 1}, "T1_FISHCHOPS": {"Thetford": 2}}
-r = market_summary(precios_sin_par, SHARK)
-assert r["diferencia_refinado"] is None, f"sin par: {r}"
-print("PASS diferencia refinado - crudo: 200 con par; None sin par")
-
-# ── 5. sin red: market_summary nunca toca la red ───────────────
+# ── 4. sin red: market_summary nunca toca la red ───────────────
 def boom(*a, **k):
     raise AssertionError("market_summary no debe tocar la red")
 
@@ -71,7 +61,7 @@ finally:
 assert r["max_venta"] == 1200, f"max sin red: {r}"
 print("PASS sin red: market_summary es funcion pura (no usa urllib)")
 
-# ── 6. integridad del config: 'uso' solo en peces raros ────────
+# ── 5. integridad del config: 'uso' solo en peces raros ────────
 for nombre, info in CONFIG["pescados"].items():
     if nombre.startswith("_"):
         continue
@@ -82,7 +72,7 @@ for nombre, info in CONFIG["pescados"].items():
         assert not info.get("uso"), f"pez comun con 'uso': {nombre}"
 print("PASS integridad config: 'uso' presente y no vacio en los 22 raros; ausente en los comunes")
 
-# ── 7. tiburon T8 -> trofeo oficial ────────────────────────────
+# ── 6. tiburon T8 -> trofeo oficial ────────────────────────────
 shark_info = next(v for k, v in CONFIG["pescados"].items()
                   if not k.startswith("_") and v.get("id") == SHARK)
 assert shark_info["uso"] == "Trofeo de tiburón", f"uso tiburon: {shark_info.get('uso')!r}"
