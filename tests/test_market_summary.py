@@ -71,4 +71,21 @@ finally:
 assert r["max_venta"] == 1200, f"max sin red: {r}"
 print("PASS sin red: market_summary es funcion pura (no usa urllib)")
 
+# ── 6. integridad del config: 'uso' solo en peces raros ────────
+for nombre, info in CONFIG["pescados"].items():
+    if nombre.startswith("_"):
+        continue
+    tipo = info.get("tipo", "comun")
+    if tipo == "raro":
+        assert "uso" in info and info["uso"], f"pez raro sin 'uso' (o vacio): {nombre}"
+    else:
+        assert not info.get("uso"), f"pez comun con 'uso': {nombre}"
+print("PASS integridad config: 'uso' presente y no vacio en los 22 raros; ausente en los comunes")
+
+# ── 7. tiburon T8 -> trofeo oficial ────────────────────────────
+shark_info = next(v for k, v in CONFIG["pescados"].items()
+                  if not k.startswith("_") and v.get("id") == SHARK)
+assert shark_info["uso"] == "Trofeo de tiburón", f"uso tiburon: {shark_info.get('uso')!r}"
+print("PASS tiburon T8: 'uso' == 'Trofeo de tiburón'")
+
 print("\nTODOS LOS TESTS DE MARKET_SUMMARY PASARON")

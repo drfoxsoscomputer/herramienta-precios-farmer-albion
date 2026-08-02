@@ -37,37 +37,44 @@
     "Almeja verdosa T3": {
       "id": "T3_FISH_FRESHWATER_SWAMP_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Sopa de almeja verdosa"
     },
     "Anguila de agua verdosa T3": {
       "id": "T3_FISH_FRESHWATER_FOREST_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Guiso de anguila de agua verdosa"
     },
     "Calamar de aguas poco profundas T3": {
       "id": "T3_FISH_SALTWATER_ALL_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Ensalada de calamar de aguas poco profundas"
     },
     "Cangrejo de río abajo T3": {
       "id": "T3_FISH_FRESHWATER_STEPPE_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Tortilla de cangrejo de río abajo"
     },
     "Locha pedregosa T3": {
       "id": "T3_FISH_FRESHWATER_HIGHLANDS_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Bocadillo de locha pedregosa"
     },
     "Ojo muerto de las sierras T3": {
       "id": "T3_FISH_FRESHWATER_MOUNTAIN_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pastel de ojo muerto de las sierras"
     },
     "Pargo de niebla blanca T3": {
       "id": "T3_FISH_FRESHWATER_AVALON_RARE",
       "trozos": 10,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pargo de niebla blanca asado"
     },
     "_T4": "--- Tier 4 ---",
     "Pique azul T4": {
@@ -94,37 +101,44 @@
     "Almeja de aguas turbias T5": {
       "id": "T5_FISH_FRESHWATER_SWAMP_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Sopa de almeja de aguas turbias"
     },
     "Anguila rojiza T5": {
       "id": "T5_FISH_FRESHWATER_FOREST_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Guiso de anguila rojiza"
     },
     "Cangrejo de río T5": {
       "id": "T5_FISH_FRESHWATER_STEPPE_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Tortilla de cangrejo de río"
     },
     "Locha de agua corriente T5": {
       "id": "T5_FISH_FRESHWATER_HIGHLANDS_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Bocadillo de locha de agua corriente"
     },
     "Ojo muerto de las montañas T5": {
       "id": "T5_FISH_FRESHWATER_MOUNTAIN_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pastel de ojo muerto de las montañas"
     },
     "Pargo de niebla ligera T5": {
       "id": "T5_FISH_FRESHWATER_AVALON_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pargo de niebla ligera asado"
     },
     "Pulpo de aguas medias T5": {
       "id": "T5_FISH_SALTWATER_ALL_RARE",
       "trozos": 20,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Ensalada de pulpo de aguas medias"
     },
     "_T6": "--- Tier 6 ---",
     "Lucio brillante T6": {
@@ -151,37 +165,44 @@
     "Locha de trueno T7": {
       "id": "T7_FISH_FRESHWATER_HIGHLANDS_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Bocadillo de locha de trueno"
     },
     "Almeja de pantano negro T7": {
       "id": "T7_FISH_FRESHWATER_SWAMP_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Sopa de almeja de pantano negro"
     },
     "Anguila de agua podrida T7": {
       "id": "T7_FISH_FRESHWATER_FOREST_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Guiso de anguila de agua podrida"
     },
     "Cangrejo de pozo T7": {
       "id": "T7_FISH_FRESHWATER_STEPPE_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Tortilla de cangrejo de pozo"
     },
     "Kraken de agua profunda T7": {
       "id": "T7_FISH_SALTWATER_ALL_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Ensalada de kraken de agua profunda"
     },
     "Ojo muerto de dos picos T7": {
       "id": "T7_FISH_FRESHWATER_MOUNTAIN_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pastel de ojo muerto dos picos"
     },
     "Pargo de niebla pura T7": {
       "id": "T7_FISH_FRESHWATER_AVALON_RARE",
       "trozos": 30,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Pargo de niebla pura asado"
     },
     "_T8": "--- Tier 8 ---",
     "Esturión de río T8": {
@@ -197,7 +218,8 @@
     "Tiburón T8": {
       "id": "T8_FISH_SALTWATER_ALL_BOSS_SHARK",
       "trozos": 200,
-      "tipo": "raro"
+      "tipo": "raro",
+      "uso": "Trofeo de tiburón"
     }
   },
   "recursos": {

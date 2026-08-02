@@ -49,6 +49,7 @@ RESUMEN = {
     "titulo": "Resumen de mercado",
     "venta_min": "Venta min",
     "venta_max": "Venta max",
+    "uso": "Se usa en",
     "ingrediente": "Es ingrediente de",
     "no_ingrediente": "No es ingrediente de ninguna salsa",
     "diferencia": "Diferencia refinado - crudo",

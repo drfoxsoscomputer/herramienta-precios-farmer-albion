@@ -43,13 +43,15 @@ def _resena(texto, dim=True, c=None):
         c.print()
 
 
-def _panel_resumen(resumen, mostrar_ingrediente=False):
+def _panel_resumen(resumen, mostrar_ingrediente=False, uso=""):
     """Panel informativo con los datos de market_summary.
 
     Solo datos objetivos (min/max, ingrediente, diferencia refinado - crudo).
     NUNCA recomienda acciones: el usuario decide.
     mostrar_ingrediente=False oculta la linea de ingrediente (ej: recursos,
     que no participan de salsas).
+    uso="" oculta la linea de uso ("Se usa en ..."); pasar un nombre de plato
+    o trofeo la muestra (ej: detalle de pez raro).
     """
     lineas = []
     if resumen.get("sin_datos"):
@@ -66,6 +68,8 @@ def _panel_resumen(resumen, mostrar_ingrediente=False):
             lineas.append(f"  {RESUMEN['ingrediente']}:  [bold]{', '.join(resumen['recetas'])}[/]")
         else:
             lineas.append(f"  [dim]{RESUMEN['no_ingrediente']}[/]")
+    if uso:
+        lineas.append(f"  {RESUMEN['uso']}:  [bold]{uso}[/]")
     if resumen.get("diferencia_refinado") is not None:
         diff = resumen["diferencia_refinado"]
         signo = "+" if diff >= 0 else ""
@@ -655,8 +659,11 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
     if config:
         recetas_config = config.get("insumos_pesca", {}).get("items", {})
     resumen = market_summary(prices, item_id, recetas_config)
+    uso = ""
+    if config:
+        uso = config.get("pescados", {}).get(nombre, {}).get("uso", "")
     console.print()
-    _panel_resumen(resumen, mostrar_ingrediente=recetas_config is not None)
+    _panel_resumen(resumen, uso=uso)
     console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
     _pausa_volver()
 
