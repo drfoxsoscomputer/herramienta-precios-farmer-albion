@@ -979,7 +979,7 @@ def menu_insumos_pesca(config):
         grid.add_row(
             f"[{color}]{nombre_corto}[/]",
             f"{cant_carne} Carne + {cant_alga} Alga",
-            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}  (extra +${extra:,}, {pct_extra:.1f}%)",
+            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}  ([{color_signo(extra)}]extra ${extra:+,} ({pct_extra:+.1f}%)[/])",
         )
 
     # ── Volumen 7 dias en grid: salsa | total | top ciudad ──
@@ -1020,8 +1020,11 @@ def menu_insumos_pesca(config):
 
         titulo = Group(
             Panel("[bold cyan]Salsas de pescado[/]", border_style="cyan"),
+            Text(""),
             tbl,
+            Text(""),
             grid,
+            Text(""),
             vol_panel,
         )
 
