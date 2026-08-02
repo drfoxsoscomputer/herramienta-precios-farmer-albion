@@ -71,11 +71,11 @@ check(2, "right", 5, 5, 2, "col unica right no-op")
 print("PASS _mover_cursor 42 casos wrap-around")
 
 # ── 3. _menu_seleccion con _leer_tecla mockeado ──────────────────
-def run_sel(teclas, opciones, filas=None, texto_bajo="", numeros=None, es_raiz=False):
+def run_sel(teclas, opciones, filas=None, numeros=None, es_raiz=False):
     seq = list(teclas)
     menus._leer_tecla = lambda espera=0: (seq.pop(0) if seq else "esc")
     return menus._menu_seleccion(opciones, titulo="T", filas=filas,
-                                 texto_bajo=texto_bajo, numeros=numeros, es_raiz=es_raiz)
+                                 numeros=numeros, es_raiz=es_raiz)
 
 opts = [(f"O{i}", f"desc {i}") for i in range(1, 39)]
 assert run_sel(["enter"], opts, filas=19) == 0, "enter en primer item -> 0"

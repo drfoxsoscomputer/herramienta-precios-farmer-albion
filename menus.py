@@ -281,7 +281,7 @@ def _mover_cursor(cursor, tecla, filas, n):
         return cursor
 
 
-def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None, es_raiz=False):
+def _menu_seleccion(opciones, titulo="", filas=None, numeros=None, es_raiz=False):
     """Selector numerado con flechas.
 
     opciones: lista de (label, desc) — label con markup Rich, desc resena
@@ -368,19 +368,12 @@ def _menu_seleccion(opciones, titulo="", filas=None, texto_bajo="", numeros=None
         # para que la pantalla no cambie de altura al navegar.
         _, desc = opciones[cursor]
         c.print(f"  [dim]{desc}[/]" if desc else "")
-        if texto_bajo:
-            if isinstance(texto_bajo, str):
-                _resena(texto_bajo, dim=True, c=c)
-            else:
-                for item in texto_bajo:
-                    if isinstance(item, tuple):
-                        txt, dim = item
-                        _resena(txt, dim=dim, c=c)
-                    else:
-                        _resena(item, dim=True, c=c)
+        c.print()
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
         esc_tecla, esc_accion = ("Esc", "salir") if es_raiz else ("Esc", "volver")
-        c.print(f"  [dim]{col_hint}Arriba/Abajo mover · [yellow]Enter[/] elegir · [yellow]{esc_tecla}[/] {esc_accion} · [yellow]R[/] recargar")
+        hint = (f"  [dim]{col_hint}Arriba/Abajo mover · [yellow]Enter[/] elegir"
+                f" · [yellow]{esc_tecla}[/] {esc_accion} · [yellow]R[/] recargar")
+        c.print(Panel(hint, border_style="cyan", box=box.ROUNDED, expand=True))
 
     primera = True
     lineas_prev = None
@@ -507,11 +500,11 @@ def menu_principal(config):
     nombres = ["Pesca", "Fibra", "Madera", "Cuero", "Mineral", "Piedra", "Salsas de pescado"]
     while True:
         panel = Panel(
-            "[dim]Elige una seccion con los numeros (1-7) o con las flechas + Enter.[/]",
+            f"  [dim]{RESENAS_MENU['principal']}[/]",
             title="[bold cyan]Albion Helper[/]",
-            subtitle="[cyan]Consulta de mercado[/]",
             border_style="cyan",
-            box=box.HEAVY,
+            box=box.ROUNDED,
+            expand=True,
         )
         opciones = []
         for i, nombre in enumerate(nombres, start=1):
@@ -519,8 +512,7 @@ def menu_principal(config):
 
         # Reiniciar NO es un item del menu: la tecla R ya recarga desde
         # cualquier pantalla (lo dice el hint), un item visible seria duplicar.
-        idx = _menu_seleccion(opciones, titulo=panel, texto_bajo=RESENAS_MENU["principal"],
-                              es_raiz=True)
+        idx = _menu_seleccion(opciones, titulo=panel, es_raiz=True)
 
         if idx == "R":
             reiniciar()
@@ -556,14 +548,19 @@ def menu_pesca(config):
             continue
         peces.append((nombre, info["id"], info["trozos"], info.get("tipo", "comun")))
 
-    titulo = Panel(f"[bold]Seleccione un pez para ver detalle[/]", border_style="blue", box=box.ROUNDED)
+    titulo = Panel(
+        f"  [dim]{RESENAS_MENU['pesca']}[/]\n\n  {LEYENDA_TIERS}",
+        title="[bold cyan]Pesca[/]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        expand=True,
+    )
     while True:
         opciones = []
         for nombre, item_id, _, _ in peces:
             _, color = info_tier(item_id)
             opciones.append((f"[{color}]{nombre}[/]", ""))
-        idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(peces) + 1) // 2,
-                              texto_bajo=[RESENAS_MENU["pesca"], (LEYENDA_TIERS, False)])
+        idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(peces) + 1) // 2)
         if idx is None:
             return
         elif idx == "R":
@@ -691,15 +688,22 @@ def ver_recurso(config, tipo):
             menu_items.append({"label": f"{crudo_name} {tk}", "tier_key": tk, "modo": "crudo"})
             menu_items.append({"label": f"{ref_name} {tk}", "tier_key": tk, "modo": "refinado"})
 
-    titulo = Panel(f"[bold]{nombre_recurso}[/]", border_style="blue", box=box.ROUNDED)
+    titulo = Panel(
+        f"  [bold]{nombre_recurso}[/]\n\n"
+        f"  [dim]{RESENAS_MENU['recursos']}[/]\n\n"
+        f"  {LEYENDA_TIERS}",
+        title="[bold cyan]Recurso[/]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        expand=True,
+    )
     while True:
         opciones = []
         for item in menu_items:
             tier_num = item["tier_key"][1:]
             color = COLORES_TIER.get(tier_num, "white")
             opciones.append((f"[{color}]{item['label']}[/]", ""))
-        idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(menu_items) + 1) // 2,
-                              texto_bajo=[RESENAS_MENU["recursos"], (LEYENDA_TIERS, False)])
+        idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(menu_items) + 1) // 2)
         if idx is None:
             return
         elif idx == "R":
@@ -917,13 +921,6 @@ def menu_insumos_pesca(config):
             continue
         precios_grp.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
 
-    alga_px = precios_grp.get("T1_SEAWEED", {})
-    carne_px = precios_grp.get("T1_FISHCHOPS", {})
-
-    # Mejores precios ingredientes para extra (comprar no aplica: usamos venta)
-    _, carne_max_vta = mejor_ciudad(carne_px)
-    _, alga_max_vta = mejor_ciudad(alga_px)
-
     # Tabla combinada
     tbl = Table(box=box.ROUNDED)
     tbl.add_column("Ciudad", style="cyan")
@@ -952,7 +949,7 @@ def menu_insumos_pesca(config):
                     row.append(f"${format_price(val)}")
         tbl.add_row(*row)
 
-    # Info por salsa en grid: salsa | receta | ciudad + precio + extra
+    # Info por salsa en grid: salsa | receta | ciudad + precio
     grid = Table.grid(padding=(0, 3))
     grid.add_column(no_wrap=True)
     grid.add_column(no_wrap=True)
@@ -972,14 +969,10 @@ def menu_insumos_pesca(config):
         cant_carne = receta.get("T1_FISHCHOPS", 0)
         cant_alga = receta.get("T1_SEAWEED", 0)
 
-        valor_insumos = carne_max_vta * cant_carne + alga_max_vta * cant_alga
-        extra = mejor_venta - valor_insumos if valor_insumos > 0 else 0
-        pct_extra = pct(extra, valor_insumos)
-
         grid.add_row(
             f"[{color}]{nombre_corto}[/]",
             f"{cant_carne} Carne + {cant_alga} Alga",
-            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}  ([{color_signo(extra)}]extra ${extra:+,} ({pct_extra:+.1f}%)[/])",
+            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}",
         )
 
     # ── Volumen 7 dias en grid: salsa | total | top ciudad ──
@@ -1002,7 +995,7 @@ def menu_insumos_pesca(config):
             vol_grid.add_row(
                 f"[{color}]{nombre_corto}[/]",
                 f"[bold]{vol_total:,}[/] uds",
-                f"{top}: {hist[top]['volumen']:,}",
+                f"{top}: {hist[top]['volumen']:,} uds",
             )
     vol_panel = (Panel(vol_grid, title="[bold]Volumen 7 dias[/]", border_style="cyan",
                        box=box.ROUNDED, title_align="left") if hay_vol
@@ -1019,7 +1012,13 @@ def menu_insumos_pesca(config):
             opciones.append((f"[{color}]{nombre}[/]", f"{cant_carne} Carne + {cant_alga} Alga"))
 
         titulo = Group(
-            Panel("[bold cyan]Salsas de pescado[/]", border_style="cyan"),
+            Panel(
+                f"  [dim]{RESENAS_MENU['insumos']}[/]",
+                title="[bold cyan]Salsas de pescado[/]",
+                border_style="cyan",
+                box=box.ROUNDED,
+                expand=True,
+            ),
             Text(""),
             tbl,
             Text(""),
@@ -1028,7 +1027,7 @@ def menu_insumos_pesca(config):
             vol_panel,
         )
 
-        idx = _menu_seleccion(opciones, titulo=titulo, texto_bajo=RESENAS_MENU["insumos"])
+        idx = _menu_seleccion(opciones, titulo=titulo)
 
         if idx is None:
             return
