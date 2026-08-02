@@ -63,6 +63,17 @@ LEYENDA_TIERS = (
     "[red]T7 rojo[/]  |  [yellow]T8 amarillo[/]"
 )
 
+# ─── Pares crudo/refinado de cada recurso (etiquetas de menu) ──
+# El menu principal y el encabezado de cada recurso muestran el par
+# "crudo/refinado" en vez del nombre solo. Claves = claves de config.
+PARES_RECURSO = {
+    "fibra": "Fibra/Tela",
+    "madera": "Troncos/Tablas",
+    "cuero": "Piel/Cuero",
+    "mineral": "Mineral/Barra",
+    "piedra": "Piedra/Bloque",
+}
+
 # ─── Resenas de las opciones del menu principal ─────────────────
 RESENAS_OPCIONES_PRINCIPAL = {
     1: "Pesca de peces comunes; precios por ciudad, entero y picado, volumen de los ultimos 7 dias.",

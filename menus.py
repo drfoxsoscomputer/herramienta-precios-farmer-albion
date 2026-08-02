@@ -24,7 +24,8 @@ from constants import CITIES, COLORES_TIER, REF_MAP, ENCH_NOMBRES, ENCH_COLORS
 from api import get_prices, get_history
 from formatting import (format_price, _formatear_historial, color_precio, color_item,
                         valores_positivos, mejor_ciudad, pct, color_signo, market_summary)
-from textos import RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL, RESUMEN
+from textos import (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL,
+                    RESUMEN, PARES_RECURSO)
 
 console = Console()
 
@@ -281,11 +282,16 @@ def _mover_cursor(cursor, tecla, filas, n):
         return cursor
 
 
-def _menu_seleccion(opciones, titulo="", filas=None, numeros=None, es_raiz=False):
+def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=None, es_raiz=False):
     """Selector numerado con flechas.
 
     opciones: lista de (label, desc) — label con markup Rich, desc resena
     contextual de la opcion (puede ser "").
+    titulo: bloque que se muestra ARRIBA del listado.
+    titulo_abajo: bloque opcional que se muestra DESPUES del listado y de la
+    descripcion de la opcion seleccionada (layout "listado arriba, datos abajo").
+    Con titulo_abajo, la desc de la opcion seleccionada va entre el listado y
+    el bloque; sin el, va en el footer (comportamiento historico).
     filas None -> una sola columna. Con filas se usa grid column-major
     (item = columna * filas + fila), igual que el reparto de la lista.
     numeros: lista opcional con la etiqueta a mostrar por opcion (ej:
@@ -362,13 +368,14 @@ def _menu_seleccion(opciones, titulo="", filas=None, numeros=None, es_raiz=False
             fila_txt = [celdas[r][c_] for c_ in range(ncol) if celdas[r][c_]]
             c.print("    ".join(fila_txt))
 
-    def footer(c=None):
+    def footer(c=None, con_desc=True):
         c = c or console
         # La linea de descripcion SIEMPRE se reserva (aunque este vacia)
         # para que la pantalla no cambie de altura al navegar.
-        _, desc = opciones[cursor]
-        c.print(f"  [dim]{desc}[/]" if desc else "")
-        c.print()
+        if con_desc:
+            _, desc = opciones[cursor]
+            c.print(f"  [dim]{desc}[/]" if desc else "")
+            c.print()
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
         esc_tecla, esc_accion = ("Esc", "salir") if es_raiz else ("Esc", "volver")
         hint = (f"  [dim]{col_hint}Arriba/Abajo mover · [yellow]Enter[/] elegir"
@@ -393,7 +400,17 @@ def _menu_seleccion(opciones, titulo="", filas=None, numeros=None, es_raiz=False
         fc.print()
         render_grid(fc)
         fc.print()
-        footer(fc)
+        if titulo_abajo:
+            # layout "listado arriba": la descripcion de la opcion seleccionada
+            # va ENTRE el listado y el bloque de datos; el footer solo hint.
+            _, desc = opciones[cursor]
+            fc.print(f"  [dim]{desc}[/]" if desc else "")
+            fc.print()
+            fc.print(titulo_abajo)
+            fc.print()
+            footer(fc, con_desc=False)
+        else:
+            footer(fc)
         lineas = buf.getvalue().split("\n")
         while lineas and lineas[-1] == "":
             lineas.pop()
@@ -497,7 +514,11 @@ def _confirmar_salida():
 
 # ─── Menu Principal ───────────────────────────────────────────
 def menu_principal(config):
-    nombres = ["Pesca", "Fibra", "Madera", "Cuero", "Mineral", "Piedra", "Salsas de pescado"]
+    # 1 Pesca · 2-6 recursos como "crudo/refinado" (PARES_RECURSO) · 7 Salsas.
+    # Los indices 1-7 NO cambian: el ruteo por `seccion` sigue intacto.
+    nombres = (["Pesca"]
+               + [PARES_RECURSO[k] for k in ("fibra", "madera", "cuero", "mineral", "piedra")]
+               + ["Salsas de pescado"])
     while True:
         panel = Panel(
             f"  [dim]{RESENAS_MENU['principal']}[/]",
@@ -669,6 +690,9 @@ def ver_recurso(config, tipo):
         return
 
     nombre_recurso = info.get("nombre", tipo.upper())
+    # El encabezado muestra el par "crudo/refinado" (ej: Fibra/Tela);
+    # si el recurso no esta en PARES_RECURSO, cae al nombre simple.
+    par_recurso = PARES_RECURSO.get(tipo, nombre_recurso)
     tiers = info["tiers"]
     tiers_ordenados = sorted(tiers.keys(), key=lambda t: int(t[1:]))
 
@@ -689,10 +713,9 @@ def ver_recurso(config, tipo):
             menu_items.append({"label": f"{ref_name} {tk}", "tier_key": tk, "modo": "refinado"})
 
     titulo = Panel(
-        f"  [bold]{nombre_recurso}[/]\n\n"
         f"  [dim]{RESENAS_MENU['recursos']}[/]\n\n"
         f"  {LEYENDA_TIERS}",
-        title="[bold cyan]Recurso[/]",
+        title=f"[bold cyan]{par_recurso}[/]",
         border_style="cyan",
         box=box.ROUNDED,
         expand=True,
@@ -1001,7 +1024,8 @@ def menu_insumos_pesca(config):
                        box=box.ROUNDED, title_align="left") if hay_vol
                  else Text("  [dim]Sin datos de historial[/]"))
 
-    # Selector: la vista de mercado es el titulo; las salsas, las opciones
+    # Selector: layout "listado arriba" — el header va arriba, los datos
+    # (tabla, recetas, volumen) van como bloque inferior.
     while True:
         opciones = []
         for nombre, sid, receta in salsas:
@@ -1019,6 +1043,9 @@ def menu_insumos_pesca(config):
                 box=box.ROUNDED,
                 expand=True,
             ),
+        )
+
+        titulo_abajo = Group(
             Text(""),
             tbl,
             Text(""),
@@ -1027,7 +1054,7 @@ def menu_insumos_pesca(config):
             vol_panel,
         )
 
-        idx = _menu_seleccion(opciones, titulo=titulo)
+        idx = _menu_seleccion(opciones, titulo=titulo, titulo_abajo=titulo_abajo)
 
         if idx is None:
             return
