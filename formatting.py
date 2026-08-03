@@ -15,11 +15,14 @@ def _formatear_historial(hist_data, label, unidad="uds"):
         return []
     lines = [f"  [bold]{label}[/]:"]
     total_vol = sum(h["volumen"] for h in hist_data.values())
+    # Ancho dinamico de la columna de volumen: se adapta a la cifra mas larga
+    # (incluido el Total) para que "uds" y el promedio queden alineados siempre.
+    ancho_vol = max([len(f"{d['volumen']:,}") for d in hist_data.values()] + [len(f"{total_vol:,}")])
     for city in sorted(hist_data, key=lambda c: hist_data[c]["volumen"], reverse=True):
         d = hist_data[city]
-        lines.append(f"    {city:15s} {d['volumen']:>8,} {unidad}  (promedio ${d['avg_price']:,})")
+        lines.append(f"    {city:15s} {d['volumen']:>{ancho_vol},} {unidad}  (promedio ${d['avg_price']:,})")
     avg = round(sum(h["avg_price"] * h["volumen"] for h in hist_data.values()) / total_vol)
-    lines.append(f"    {'Total':15s} {total_vol:>8,} {unidad}  (promedio ${avg:,})")
+    lines.append(f"    {'Total':15s} {total_vol:>{ancho_vol},} {unidad}  (promedio ${avg:,})")
     return lines
 
 
@@ -84,34 +87,43 @@ def color_signo(valor):
 
 # ─── Resumen de mercado (Fase B) ───────────────────────────────
 
-def market_summary(precios, item, recetas_config=None):
+def market_summary(precios, item, recetas_config=None, volumen=None):
     """Resumen informativo de mercado (FUNCION PURA: sin red, sin imprimir).
 
     Devuelve datos objetivos para que la UI formatee (NO recomienda acciones):
       min_venta / max_venta   -> precio de venta minimo/maximo del item
                                  entre las ciudades con datos
       min_ciudad / max_ciudad -> ciudad donde se da cada extremo ("" si
-                                 no hay datos; primer match iterando precios)
+                                 no hay datos). Si varias ciudades empatan en
+                                 el extremo, gana la de MAYOR volumen de venta
+                                 (desempate por movimiento real).
       es_ingrediente / recetas-> si el item es ingrediente de alguna salsa
       sin_datos               -> True si no hay precio de venta
 
     precios: {item_id: {ciudad: sell_price_min}} (lo que ya arma la UI).
-    item: item_id en vista (str).
+    item: item id en vista (str).
     recetas_config: dict de insumos_pesca.items (nombre -> {id, receta}).
+    volumen: {ciudad: volumen} del historial 7d (desempate). Opcional.
     """
     # ── Precios del item en vista ──
     p_item = precios.get(item, {}) if isinstance(precios, dict) else {}
     vals = [v for v in p_item.values() if v > 0]
     min_venta = min(vals) if vals else 0
     max_venta = max(vals) if vals else 0
-    min_ciudad = ""
-    max_ciudad = ""
-    if vals:
-        for c, v in p_item.items():
-            if v == min_venta and not min_ciudad:
-                min_ciudad = c
-            if v == max_venta and not max_ciudad:
-                max_ciudad = c
+
+    def _desempate(ciudades):
+        """De una lista de ciudades con el MISMO precio, devuelve la de mayor
+        volumen (movimiento real). Perden las que no tienen dato de volumen."""
+        if not ciudades:
+            return ""
+        if len(ciudades) == 1:
+            return ciudades[0]
+        vol = volumen or {}
+        return max(ciudades, key=lambda c: (
+            vol.get(c, 0) if isinstance(vol.get(c), (int, float)) else 0, c))
+
+    min_ciudad = _desempate([c for c, v in p_item.items() if v == min_venta]) if vals else ""
+    max_ciudad = _desempate([c for c, v in p_item.items() if v == max_venta]) if vals else ""
 
     # ── Ingrediente: el item aparece como clave en alguna receta ──
     es_ingrediente = False

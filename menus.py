@@ -30,6 +30,12 @@ from textos import (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCION
 console = Console()
 
 
+def _volumen_por_ciudad(hist):
+    """{ciudad: volumen} del historial 7d (para desempatar min/max en
+    market_summary). El historial viene {ciudad: {volumen, avg_price}}."""
+    return {c: d["volumen"] for c, d in (hist or {}).items()}
+
+
 def _resena(texto, dim=True, c=None):
     """Muestra una resena de ayuda. dim=True -> gris tenue;
     dim=False -> texto con sus propios colores (leyenda de tiers).
@@ -44,7 +50,7 @@ def _resena(texto, dim=True, c=None):
         c.print()
 
 
-def _panel_resumen(resumen, mostrar_ingrediente=False, uso=""):
+def _panel_resumen(resumen, mostrar_ingrediente=False, uso="", items_extra=None, nombre_principal=""):
     """Panel informativo con los datos de market_summary.
 
     Solo datos objetivos (min/max, ingrediente). NUNCA recomienda acciones:
@@ -53,32 +59,73 @@ def _panel_resumen(resumen, mostrar_ingrediente=False, uso=""):
     que no participan de salsas).
     uso="" oculta la linea de uso ("Se usa en ..."); pasar un nombre de plato
     o trofeo la muestra (ej: detalle de pez raro).
+    nombre_principal: etiqueta del item principal. Si se pasa (no vacia), el
+    resumen se arma en una grid alineada [item | venta min | venta max];
+    si esta vacia, usa las filas clasicas "Venta min:" y "Venta max:".
+    items_extra=[(etiqueta, resumen), ...]: agrega filas alineadas de otros
+    items (ej: crudo Y refinado juntos) cuando se usa nombre_principal.
     """
-    lineas = []
-    if resumen.get("sin_datos"):
-        lineas.append(f"  [dim]{RESUMEN['sin_datos']}[/]")
-    else:
-        min_ciudad = resumen.get("min_ciudad") or ""
-        max_ciudad = resumen.get("max_ciudad") or ""
+    def _celdas_precio(res):
+        min_ciudad = res.get("min_ciudad") or ""
+        max_ciudad = res.get("max_ciudad") or ""
         min_txt = f" ({min_ciudad})" if min_ciudad else ""
         max_txt = f" ({max_ciudad})" if max_ciudad else ""
-        lineas.append(f"  {RESUMEN['venta_min']}:  [bold]${format_price(resumen['min_venta'])}[/]{min_txt}")
-        lineas.append(f"  {RESUMEN['venta_max']}:  [bold]${format_price(resumen['max_venta'])}[/]{max_txt}")
+        return (f"[bold]${format_price(res['min_venta'])}[/]{min_txt}",
+                f"[bold]${format_price(res['max_venta'])}[/]{max_txt}")
+
+    extras = items_extra or []
+    usar_grid = bool(nombre_principal) or bool(extras)
+
+    if usar_grid:
+        grid = Table.grid(padding=(0, 2))
+        grid.add_column(no_wrap=True, max_width=22)
+        grid.add_column(justify="left", max_width=26)
+        grid.add_column(justify="left", max_width=26)
+        if nombre_principal and not resumen.get("sin_datos"):
+            mn, mx = _celdas_precio(resumen)
+            grid.add_row(nombre_principal, mn, mx)
+        for etiq, res in extras:
+            if res.get("sin_datos"):
+                grid.add_row(etiq, f"  [dim]{RESUMEN['sin_datos']}[/]", "")
+            else:
+                mn, mx = _celdas_precio(res)
+                grid.add_row(etiq, mn, mx)
+        cuerpo: list = [grid]
+    else:
+        cuerpo = []
+        if resumen.get("sin_datos"):
+            cuerpo.append(f"  [dim]{RESUMEN['sin_datos']}[/]")
+        else:
+            min_ciudad = resumen.get("min_ciudad") or ""
+            max_ciudad = resumen.get("max_ciudad") or ""
+            min_txt = f" ({min_ciudad})" if min_ciudad else ""
+            max_txt = f" ({max_ciudad})" if max_ciudad else ""
+            cuerpo.append(f"  {RESUMEN['venta_min']}:  [bold]${format_price(resumen['min_venta'])}[/]{min_txt}")
+            cuerpo.append(f"  {RESUMEN['venta_max']}:  [bold]${format_price(resumen['max_venta'])}[/]{max_txt}")
+
+    # Lineas de informacion extra (ingrediente / uso) fuera de la grid.
+    extra_lineas = []
     if mostrar_ingrediente:
         if resumen.get("es_ingrediente") and resumen.get("recetas"):
-            lineas.append(f"  {RESUMEN['ingrediente']}:  [bold]{', '.join(resumen['recetas'])}[/]")
+            extra_lineas.append(f"  {RESUMEN['ingrediente']}:  [bold]{', '.join(resumen['recetas'])}[/]")
         else:
-            lineas.append(f"  [dim]{RESUMEN['no_ingrediente']}[/]")
+            extra_lineas.append(f"  [dim]{RESUMEN['no_ingrediente']}[/]")
     if uso:
-        lineas.append(f"  {RESUMEN['uso']}:  [bold]{uso}[/]")
-    if not lineas:
-        lineas.append("  [dim]Sin datos de mercado[/]")
+        extra_lineas.append(f"  {RESUMEN['uso']}:  [bold]{uso}[/]")
+
+    if usar_grid:
+        cuerpo = Group(*cuerpo, *extra_lineas) if extra_lineas else cuerpo[0]
+    else:
+        cuerpo.extend(extra_lineas)
+        cuerpo = "\n".join(cuerpo) if cuerpo else "  [dim]Sin datos de mercado[/]"
+
     console.print(Panel(
-        "\n".join(lineas),
+        cuerpo,
         title=f"[bold]{RESUMEN['titulo']}[/]",
         border_style="green",
         box=box.ROUNDED,
         title_align="left",
+        expand=False,
     ))
 
 
@@ -502,6 +549,39 @@ def _pausa_volver():
             reiniciar()
 
 
+def _panel_detalle(nombre, color, contenido):
+    """Header unificado de las pantallas de detalle (componente unico).
+
+    nombre: titular en el borde; color: color de la paleta del item (tier o
+    encantamiento) — el MISMO con que se lista el item en el menu, sin negrita
+    para que coincida en terminales de 16 colores. contenido: bloque interior
+    (tag + resena). Compartido por pez, recurso e insumo.
+    """
+    console.print(Panel(
+        contenido,
+        title=f"[{color}]{nombre}[/]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        expand=True,
+    ))
+    console.print()
+
+
+def _hint_detalle(c=None):
+    """Caja de hint del footer de las pantallas de detalle.
+
+    Mismo estilo que el footer del selector (Panel cyan ROUNDED expand),
+    pero sin flechas/Enter: las pantallas de detalle solo vuelven o recargan.
+    """
+    c = c or console
+    c.print(Panel(
+        "  [dim][yellow]Esc[/] volver · [yellow]R[/] recargar[/]",
+        border_style="cyan",
+        box=box.ROUNDED,
+        expand=True,
+    ))
+
+
 def _confirmar_salida():
     """Raiz: pide confirmacion antes de salir. Enter confirma, Esc cancela."""
     while True:
@@ -594,15 +674,16 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
     limpiar_pantalla()
     tier, color = info_tier(item_id)
     tipo_txt = "Raro" if tipo == "raro" else "Comun"
-    tag = f"[bold {color}]T{tier} {tipo_txt}[/]"
-    console.print(f"\n[bold cyan]>>> {nombre}[/]")
-    console.print(f"[dim]{tag}  —  {trozos} trozos al picar[/]")
-    console.print()
-    _resena(RESENAS_DETALLE["pez"])
+    tag = f"[{color}]T{tier} {tipo_txt}[/]"
+    # Header unificado: nombre en el borde con el color del tier, tag + reseña adentro.
+    _panel_detalle(
+        nombre, color,
+        f"  {tag}  [dim]—  {trozos} trozos al picar[/]\n\n  {RESENAS_DETALLE['pez']}",
+    )
 
     raw_data = get_prices([item_id, "T1_FISHCHOPS"])
     if not raw_data:
-        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _hint_detalle()
         _pausa_volver()
         return
 
@@ -666,19 +747,21 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
             border_style="cyan",
             box=box.ROUNDED,
             title_align="left",
+            expand=False,
         ))
 
     # ─── Resumen de mercado (informativo, sin recomendaciones) ──
     recetas_config = None
     if config:
         recetas_config = config.get("insumos_pesca", {}).get("items", {})
-    resumen = market_summary(prices, item_id, recetas_config)
+    resumen = market_summary(prices, item_id, recetas_config, volumen=_volumen_por_ciudad(hist_entero))
     uso = ""
     if config:
         uso = config.get("pescados", {}).get(nombre, {}).get("uso", "")
     console.print()
     _panel_resumen(resumen, uso=uso)
-    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    console.print()
+    _hint_detalle()
     _pausa_volver()
 
 
@@ -735,22 +818,6 @@ def ver_recurso(config, tipo):
             item = menu_items[idx]
             _ver_detalle_recurso(nombre_recurso, item["tier_key"], tiers[item["tier_key"]], modo=item["modo"])
 
-def _linea_mayor_menor(nombre_mk, vals):
-    """Una linea del panel de observacion: precio MAYOR y MENOR de una
-    variante, cada uno con su ciudad (datos objetivos, sin recomendaciones).
-
-    nombre_mk: nombre ya formateado (color de tier o de encantamiento).
-    vals: {ciudad: precio} con solo valores > 0 (debe estar no vacio).
-    Si mayor y menor caen en la misma ciudad, muestra una sola entrada.
-    """
-    c_max, p_max = mejor_ciudad(vals)
-    c_min, p_min = mejor_ciudad(vals, "min")
-    if c_max == c_min:
-        return f"  {nombre_mk}: [bold]{c_max}[/] ${p_max:,} (mayor)"
-    return (f"  {nombre_mk}: [bold]{c_max}[/] ${p_max:,} (mayor)"
-            f" · [bold]{c_min}[/] ${p_min:,} (menor)")
-
-
 def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     limpiar_pantalla()
     crudo_id = tier_data["crudo"]
@@ -767,13 +834,20 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         titulo_item = ref_nombre
     else:
         titulo_item = f"{nombre_real} -> {ref_nombre}"
-    console.print(f"\n[bold cyan]>>> {titulo_item} {tier_key}[/]")
-    console.print()
-    _resena(RESENAS_DETALLE["recurso"])
+    # Header unificado: nombre en el borde con el color del tier, reseña adentro.
+    color = COLORES_TIER.get(tier_key[1:], "white")
+    _panel_detalle(
+        f"{titulo_item} {tier_key}", color,
+        f"  {RESENAS_DETALLE['recurso']}",
+    )
 
-    # IDs de items encantados
-    ench_ids = [f"{crudo_id}_LEVEL{i}@{i}" for i in range(1, 5)]
-    ref_ench_ids = [f"{refinado_id}_LEVEL{i}@{i}" for i in range(1, 5)]
+    # Los encantamientos (.1-.4) existen desde T4 en Albion; T2/T3 no tienen
+    # versiones encantadas, asi que se omiten (columnas, consultas y observacion).
+    has_ench = int(tier_key[1:]) >= 4
+
+    # IDs de items encantados (solo si el tier los tiene)
+    ench_ids = [f"{crudo_id}_LEVEL{i}@{i}" for i in range(1, 5)] if has_ench else []
+    ref_ench_ids = [f"{refinado_id}_LEVEL{i}@{i}" for i in range(1, 5)] if has_ench else []
 
     # Buscar precios (solo lo necesario segun modo)
     if modo == "crudo":
@@ -785,7 +859,7 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
 
     raw_data = get_prices(item_ids)
     if not raw_data:
-        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _hint_detalle()
         _pausa_volver()
         return
 
@@ -797,47 +871,47 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         prices_map.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
 
     # ═══════════════ TABLA ═══════════════
-    if modo == "crudo" or modo == "todo":
-        planos = {c: prices_map.get(crudo_id, {}).get(c, 0) for c in CITIES if prices_map.get(crudo_id, {}).get(c, 0) > 0}
-        tbl = Table(box=box.ROUNDED)
-        tbl.add_column("Ciudad", style="cyan")
-        tbl.add_column(nombre_real, justify="right")
-        for e in (".1", ".2", ".3", ".4"):
-            tbl.add_column(e, justify="right")
+    # Una sola tabla: columna Ciudad + columnas de crudo y/o refinado (+ encantamientos).
+    mostrar_crudo = (modo == "crudo" or modo == "todo")
+    mostrar_ref = (modo == "refinado" or modo == "todo")
+    planos = {c: prices_map.get(crudo_id, {}).get(c, 0) for c in CITIES if prices_map.get(crudo_id, {}).get(c, 0) > 0} if mostrar_crudo else {}
+    refs = {c: prices_map.get(refinado_id, {}).get(c, 0) for c in CITIES if prices_map.get(refinado_id, {}).get(c, 0) > 0} if mostrar_ref else {}
 
-        for city in CITIES:
-            row = [city]
+    tbl = Table(box=box.ROUNDED)
+    tbl.add_column("Ciudad", style="cyan")
+    if mostrar_crudo:
+        tbl.add_column(nombre_real, justify="right")
+        if has_ench:
+            for e in (".1", ".2", ".3", ".4"):
+                tbl.add_column(e, justify="right")
+    if mostrar_ref:
+        tbl.add_column(ref_nombre, justify="right")
+        if has_ench:
+            for e in (".1", ".2", ".3", ".4"):
+                tbl.add_column(e, justify="right")
+
+    for city in CITIES:
+        row = [city]
+        if mostrar_crudo:
             plano = prices_map.get(crudo_id, {}).get(city, 0)
             row.append(color_item(plano, planos.values()))
-            for i in range(4):
-                eid = ench_ids[i]
-                val = prices_map.get(eid, {}).get(city, 0)
-                vals = [prices_map.get(ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ench_ids[i], {}).get(c, 0) > 0]
-                row.append(color_item(val, vals))
-            tbl.add_row(*row)
-        console.print(tbl)
-
-    if modo == "refinado" or modo == "todo":
-        if modo != "crudo":
-            console.print()
-        refs = {c: prices_map.get(refinado_id, {}).get(c, 0) for c in CITIES if prices_map.get(refinado_id, {}).get(c, 0) > 0}
-        tbl = Table(box=box.ROUNDED)
-        tbl.add_column("Ciudad", style="cyan")
-        tbl.add_column(ref_nombre, justify="right")
-        for e in (".1", ".2", ".3", ".4"):
-            tbl.add_column(e, justify="right")
-
-        for city in CITIES:
-            row = [city]
+            if has_ench:
+                for i in range(4):
+                    eid = ench_ids[i]
+                    val = prices_map.get(eid, {}).get(city, 0)
+                    vals = [prices_map.get(ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ench_ids[i], {}).get(c, 0) > 0]
+                    row.append(color_item(val, vals))
+        if mostrar_ref:
             ref = prices_map.get(refinado_id, {}).get(city, 0)
             row.append(color_item(ref, refs.values()))
-            for i in range(4):
-                eid = ref_ench_ids[i]
-                val = prices_map.get(eid, {}).get(city, 0)
-                vals = [prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0]
-                row.append(color_item(val, vals))
-            tbl.add_row(*row)
-        console.print(tbl)
+            if has_ench:
+                for i in range(4):
+                    eid = ref_ench_ids[i]
+                    val = prices_map.get(eid, {}).get(city, 0)
+                    vals = [prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0]
+                    row.append(color_item(val, vals))
+        tbl.add_row(*row)
+    console.print(tbl)
 
     # ═══════════════ HISTORIAL 7 DIAS ═══════════════
     console.print()
@@ -859,58 +933,23 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
             border_style="cyan",
             box=box.ROUNDED,
             title_align="left",
+            expand=False,
         ))
 
-    # ═══════════════ PANEL DE OBSERVACION ═══════════════
+    # ═══════════════ RESUMEN DE MERCADO (informativo, sin recomendaciones) ══
     console.print()
-
-    lineas = []
-    # Nivel 0
-    if modo == "crudo" or modo == "todo":
-        crudo_vals = {c: prices_map.get(crudo_id, {}).get(c, 0) for c in CITIES if prices_map.get(crudo_id, {}).get(c, 0) > 0}
-        if crudo_vals:
-            lineas.append(_linea_mayor_menor(nombre_real, crudo_vals))
-    if modo == "refinado" or modo == "todo":
-        ref_vals = {c: prices_map.get(refinado_id, {}).get(c, 0) for c in CITIES if prices_map.get(refinado_id, {}).get(c, 0) > 0}
-        if ref_vals:
-            lineas.append(_linea_mayor_menor(ref_nombre, ref_vals))
-
-    # Niveles 1-4
-    for i in range(4):
-        mostrar_crudo = (modo == "crudo" or modo == "todo")
-        mostrar_ref = (modo == "refinado" or modo == "todo")
-
-        ench_vals = {}
-        ref_ench_vals = {}
-        if mostrar_crudo:
-            ench_vals = {c: prices_map.get(ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ench_ids[i], {}).get(c, 0) > 0}
-        if mostrar_ref:
-            ref_ench_vals = {c: prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0}
-
-        if not ench_vals and not ref_ench_vals:
-            continue
-
-        enc_nombre = ENCH_NOMBRES[i + 1]
-        enc_color = ENCH_COLORS[i + 1]
-        lineas.append("")
-        if ench_vals:
-            lineas.append(_linea_mayor_menor(f"[{enc_color}]{nombre_real} {enc_nombre}[/]", ench_vals))
-        if ref_ench_vals:
-            lineas.append(_linea_mayor_menor(f"[{enc_color}]{ref_nombre} {enc_nombre}[/]", ref_ench_vals))
-
-    if not lineas:
-        txt = "  [dim]Sin datos de precios.[/]"
+    if modo == "todo":
+        res_crudo = market_summary(prices_map, crudo_id, volumen=_volumen_por_ciudad(hist_crudo))
+        res_ref = market_summary(prices_map, refinado_id, volumen=_volumen_por_ciudad(hist_ref))
+        _panel_resumen(res_crudo, nombre_principal=nombre_real,
+                       items_extra=[(ref_nombre, res_ref)])
     else:
-        txt = "\n".join(lineas).rstrip()
-
-    console.print(Panel(txt, title="[bold]Precio mayor y menor por ciudad[/]", border_style="green", box=box.HEAVY, title_align="left"))
-
-    # ─── Resumen de mercado (informativo, sin recomendaciones) ──
-    item_vista = refinado_id if modo == "refinado" else crudo_id
-    resumen = market_summary(prices_map, item_vista)
+        item_vista = refinado_id if modo == "refinado" else crudo_id
+        hist_vista = hist_ref if modo == "refinado" else hist_crudo
+        resumen = market_summary(prices_map, item_vista, volumen=_volumen_por_ciudad(hist_vista))
+        _panel_resumen(resumen)
     console.print()
-    _panel_resumen(resumen)
-    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    _hint_detalle()
     _pausa_volver()
 
 
@@ -930,9 +969,15 @@ def menu_insumos_pesca(config):
 
     if not raw_data:
         limpiar_pantalla()
-        console.print("\n[bold cyan]>>> Salsas de pescado[/]\n")
-        console.print("  [red][!] Sin datos de mercado[/]")
-        console.print("\n  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        console.print(Panel(
+            "  [red][!] Sin datos de mercado[/]",
+            title="[bold cyan]Salsas de pescado[/]",
+            border_style="cyan",
+            box=box.ROUNDED,
+            expand=True,
+        ))
+        console.print()
+        _hint_detalle()
         _pausa_volver()
         return
 
@@ -1021,7 +1066,7 @@ def menu_insumos_pesca(config):
                 f"{top}: {hist[top]['volumen']:,} uds",
             )
     vol_panel = (Panel(vol_grid, title="[bold]Volumen 7 dias[/]", border_style="cyan",
-                       box=box.ROUNDED, title_align="left") if hay_vol
+                       box=box.ROUNDED, title_align="left", expand=False) if hay_vol
                  else Text("  [dim]Sin datos de historial[/]"))
 
     # Selector: layout "listado arriba" — el header va arriba, los datos
@@ -1105,9 +1150,10 @@ def _tabla_insumos(filas):
 
 def ver_detalle_insumo(nombre, item_id, config):
     limpiar_pantalla()
-    console.print(f"\n[bold cyan]>>> {nombre}[/]")
-    console.print()
-    _resena(RESENAS_DETALLE["insumo"])
+    # Header unificado: nombre en el borde con el color de encantamiento, reseña adentro.
+    nivel = int(item_id.split("_LEVEL")[-1]) if "_LEVEL" in item_id else 0
+    color = ENCH_COLORS[nivel] if 0 <= nivel < len(ENCH_COLORS) else "white"
+    _panel_detalle(nombre, color, f"  {RESENAS_DETALLE['insumo']}")
 
     id_to_nombre = _id_a_nombre(config)
 
@@ -1125,7 +1171,7 @@ def ver_detalle_insumo(nombre, item_id, config):
 
     raw_data = get_prices(fetch_ids)
     if not raw_data:
-        console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+        _hint_detalle()
         _pausa_volver()
         return
 
@@ -1267,14 +1313,15 @@ def ver_detalle_insumo(nombre, item_id, config):
             border_style="cyan",
             box=box.ROUNDED,
             title_align="left",
+            expand=False,
         ))
 
     # ── Resumen de mercado (informativo, sin recomendaciones) ──
     recetas_config = config.get("insumos_pesca", {}).get("items", {})
-    resumen = market_summary(precios_grp, item_id, recetas_config)
+    resumen = market_summary(precios_grp, item_id, recetas_config, volumen=_volumen_por_ciudad(hist))
     console.print()
     _panel_resumen(resumen, mostrar_ingrediente=True)
 
     console.print()
-    console.print("  [yellow][Esc][/] Volver · [yellow][R][/] Recargar")
+    _hint_detalle()
     _pausa_volver()

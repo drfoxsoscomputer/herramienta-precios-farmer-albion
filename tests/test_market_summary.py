@@ -78,4 +78,16 @@ shark_info = next(v for k, v in CONFIG["pescados"].items()
 assert shark_info["uso"] == "Trofeo de tiburón", f"uso tiburon: {shark_info.get('uso')!r}"
 print("PASS tiburon T8: 'uso' == 'Trofeo de tiburón'")
 
+# ── 7. desempate por volumen: empate en min/max gana mayor volumen ──
+# Tres ciudades a $100 (empate total); sin volumen se toma el 1er match
+# del dict. Con volumen, la de mayor venta gana el desempate.
+empate = {"T4_DIRT": {"Thetford": 100, "Lymhurst": 100, "Fort Sterling": 100}}
+r_sin = market_summary(empate, "T4_DIRT")
+assert r_sin["min_ciudad"] == "Thetford" and r_sin["max_ciudad"] == "Thetford", r_sin
+vol = {"Thetford": 10, "Lymhurst": 900, "Fort Sterling": 50}
+r = market_summary(empate, "T4_DIRT", volumen=vol)
+assert r["min_ciudad"] == "Lymhurst", f"desempate min: {r}"
+assert r["max_ciudad"] == "Lymhurst", f"desempate max: {r}"
+print("PASS desempate por volumen: entre empate de 3, gana la de mayor volumen")
+
 print("\nTODOS LOS TESTS DE MARKET_SUMMARY PASARON")
