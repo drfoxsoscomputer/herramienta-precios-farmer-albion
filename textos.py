@@ -20,9 +20,8 @@ RESENAS_MENU = {
         ".1 a .4."
     ),
     "insumos": (
-        "Elige una salsa. Veras su analisis de rentabilidad: receta, "
-        "costo de insumos, ganancia al fabricarla y la comparacion con "
-        "vender los insumos por separado."
+        "Elige una salsa. Veras su receta, el precio de venta por ciudad "
+        "y el volumen de los ultimos 7 dias."
     ),
 }
 
@@ -30,21 +29,19 @@ RESENAS_MENU = {
 RESENAS_DETALLE = {
     "pez": (
         "Verde = el mayor precio de esa ciudad, rojo = el menor, N/D = sin "
-        "datos. Abajo, el resumen de mercado muestra datos objetivos."
+        "datos. Abajo, el resumen de mercado."
     ),
     "recurso": (
         "Verde = el mayor precio de esa ciudad, rojo = el menor. .1 a .4 "
-        "son encantamientos. N/D = sin datos. El resumen muestra datos "
-        "objetivos."
+        "son encantamientos. N/D = sin datos."
     ),
     "insumo": (
-        "Costo de insumos, precio de venta y ganancia por salsa. La "
-        "comparacion muestra el valor de fabricar vs vender los insumos "
-        "por separado (datos objetivos)."
+        "Receta de la salsa y su mercado por ciudad: precio de venta y "
+        "volumen de los ultimos 7 dias."
     ),
 }
 
-# ─── Resumen de mercado (datos objetivos, sin recomendaciones) ─
+# ─── Resumen de mercado ─
 RESUMEN = {
     "titulo": "Resumen de mercado",
     "venta_min": "Venta min",

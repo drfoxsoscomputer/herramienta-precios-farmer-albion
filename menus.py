@@ -23,7 +23,7 @@ from rich import box
 from constants import CITIES, COLORES_TIER, REF_MAP, ENCH_NOMBRES, ENCH_COLORS
 from api import get_prices, get_history
 from formatting import (format_price, _formatear_historial, color_precio, color_item,
-                        valores_positivos, mejor_ciudad, pct, color_signo, market_summary)
+                        valores_positivos, mejor_ciudad, market_summary, antiguedad)
 from textos import (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL,
                     RESUMEN, PARES_RECURSO)
 
@@ -34,6 +34,20 @@ def _volumen_por_ciudad(hist):
     """{ciudad: volumen} del historial 7d (para desempatar min/max en
     market_summary). El historial viene {ciudad: {volumen, avg_price}}."""
     return {c: d["volumen"] for c, d in (hist or {}).items()}
+
+
+def _fecha_fresca(fechas, items, ciudad):
+    """Timestamp ISO mas reciente entre `items` para `ciudad`.
+
+    fechas: {item_id: {ciudad: [timestamps...]}} con los sell_price_min_date
+    y sell_price_max_date de la API (los arma el mapeo de cada detalle).
+    Devuelve None si ningun item tiene timestamp para esa ciudad (fila sin
+    datos -> la columna "Actualizado" muestra un guion).
+    """
+    candidatos = []
+    for item in items:
+        candidatos.extend(fechas.get(item, {}).get(ciudad, []))
+    return max(candidatos) if candidatos else None
 
 
 def _resena(texto, dim=True, c=None):
@@ -688,6 +702,7 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
         return
 
     prices = {}
+    fechas = {}  # item_id -> ciudad -> [timestamps min/max de la API]
     for entry in raw_data:
         # Solo precios de calidad normal (1): el helper compara el item base.
         if entry.get("quality", 1) != 1:
@@ -697,6 +712,15 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
         if item not in prices:
             prices[item] = {}
         prices[item][city] = entry.get("sell_price_min", 0)
+        # Los timestamps no entran en `prices` (contrato de market_summary):
+        # van en paralelo para la columna "Actualizado". Solo cuando la fila
+        # tiene precio real: la API manda "0001-01-01T00:00:00" como centinela
+        # en ciudades sin ventas (fila N/D -> columna con guion).
+        fechas.setdefault(item, {}).setdefault(city, [])
+        if entry.get("sell_price_min", 0) > 0 and entry.get("sell_price_min_date"):
+            fechas[item][city].append(entry["sell_price_min_date"])
+        if entry.get("sell_price_max", 0) > 0 and entry.get("sell_price_max_date"):
+            fechas[item][city].append(entry["sell_price_max_date"])
 
     fish_prices = prices.get(item_id, {})
     chops_prices = prices.get("T1_FISHCHOPS", {})
@@ -719,10 +743,16 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
     tbl = Table(box=box.ROUNDED)
     tbl.add_column("Ciudad", style="cyan")
     tbl.add_column("Entero", justify="right")
+    tbl.add_column("Actualizado", justify="right")
     tbl.add_column("Picado", justify="right")
+    tbl.add_column("Actualizado", justify="right")
     for city in CITIES:
         e, p = precios[city]
-        tbl.add_row(city, color_precio(e, max_entero, min_entero), color_precio(p, max_picado, min_picado))
+        fresca_entero = antiguedad(_fecha_fresca(fechas, [item_id], city))
+        fresca_picado = antiguedad(_fecha_fresca(fechas, ["T1_FISHCHOPS"], city))
+        tbl.add_row(city,
+                    color_precio(e, max_entero, min_entero), fresca_entero or "[dim]—[/]",
+                    color_precio(p, max_picado, min_picado), fresca_picado or "[dim]—[/]")
     console.print(tbl)
 
     # ─── Historial 7d (si disponible) ───────────────────────────
@@ -864,11 +894,23 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
         return
 
     prices_map = {}
+    fechas = {}  # item_id -> ciudad -> [timestamps min/max de la API]
     for entry in raw_data:
         # Solo precios de calidad normal (1): el helper compara el item base.
         if entry.get("quality", 1) != 1:
             continue
-        prices_map.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
+        iid = entry["item_id"]
+        ciudad = entry["city"]
+        prices_map.setdefault(iid, {})[ciudad] = entry.get("sell_price_min", 0)
+        # Los timestamps no entran en `prices_map` (contrato de market_summary):
+        # van en paralelo para la columna "Actualizado". Solo cuando la fila
+        # tiene precio real: la API manda "0001-01-01T00:00:00" como centinela
+        # en ciudades sin ventas (fila N/D -> columna con guion).
+        fechas.setdefault(iid, {}).setdefault(ciudad, [])
+        if entry.get("sell_price_min", 0) > 0 and entry.get("sell_price_min_date"):
+            fechas[iid][ciudad].append(entry["sell_price_min_date"])
+        if entry.get("sell_price_max", 0) > 0 and entry.get("sell_price_max_date"):
+            fechas[iid][ciudad].append(entry["sell_price_max_date"])
 
     # ═══════════════ TABLA ═══════════════
     # Una sola tabla: columna Ciudad + columnas de crudo y/o refinado (+ encantamientos).
@@ -881,35 +923,47 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     tbl.add_column("Ciudad", style="cyan")
     if mostrar_crudo:
         tbl.add_column(nombre_real, justify="right")
+        tbl.add_column("Actualizado", justify="right")
         if has_ench:
             for e in (".1", ".2", ".3", ".4"):
                 tbl.add_column(e, justify="right")
+                tbl.add_column("Actualizado", justify="right")
     if mostrar_ref:
         tbl.add_column(ref_nombre, justify="right")
+        tbl.add_column("Actualizado", justify="right")
         if has_ench:
             for e in (".1", ".2", ".3", ".4"):
                 tbl.add_column(e, justify="right")
+                tbl.add_column("Actualizado", justify="right")
 
     for city in CITIES:
         row = [city]
         if mostrar_crudo:
             plano = prices_map.get(crudo_id, {}).get(city, 0)
             row.append(color_item(plano, planos.values()))
+            fresca = antiguedad(_fecha_fresca(fechas, [crudo_id], city))
+            row.append(fresca or "[dim]—[/]")
             if has_ench:
                 for i in range(4):
                     eid = ench_ids[i]
                     val = prices_map.get(eid, {}).get(city, 0)
                     vals = [prices_map.get(ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ench_ids[i], {}).get(c, 0) > 0]
                     row.append(color_item(val, vals))
+                    fresca = antiguedad(_fecha_fresca(fechas, [eid], city))
+                    row.append(fresca or "[dim]—[/]")
         if mostrar_ref:
             ref = prices_map.get(refinado_id, {}).get(city, 0)
             row.append(color_item(ref, refs.values()))
+            fresca = antiguedad(_fecha_fresca(fechas, [refinado_id], city))
+            row.append(fresca or "[dim]—[/]")
             if has_ench:
                 for i in range(4):
                     eid = ref_ench_ids[i]
                     val = prices_map.get(eid, {}).get(city, 0)
                     vals = [prices_map.get(ref_ench_ids[i], {}).get(c, 0) for c in CITIES if prices_map.get(ref_ench_ids[i], {}).get(c, 0) > 0]
                     row.append(color_item(val, vals))
+                    fresca = antiguedad(_fecha_fresca(fechas, [eid], city))
+                    row.append(fresca or "[dim]—[/]")
         tbl.add_row(*row)
     console.print(tbl)
 
@@ -983,11 +1037,21 @@ def menu_insumos_pesca(config):
 
     # Agrupar por item_id
     precios_grp = {}
+    fechas = {}  # item_id -> ciudad -> [timestamps min/max de la API]
     for entry in raw_data:
         # Solo precios de calidad normal (1): el helper compara el item base.
         if entry.get("quality", 1) != 1:
             continue
-        precios_grp.setdefault(entry["item_id"], {})[entry["city"]] = entry.get("sell_price_min", 0)
+        iid = entry["item_id"]
+        ciudad = entry["city"]
+        precios_grp.setdefault(iid, {})[ciudad] = entry.get("sell_price_min", 0)
+        # Timestamps en paralelo (la columna "Actualizado"); solo con precio
+        # real: la API manda "0001-01-01T00:00:00" como centinela sin ventas.
+        fechas.setdefault(iid, {}).setdefault(ciudad, [])
+        if entry.get("sell_price_min", 0) > 0 and entry.get("sell_price_min_date"):
+            fechas[iid][ciudad].append(entry["sell_price_min_date"])
+        if entry.get("sell_price_max", 0) > 0 and entry.get("sell_price_max_date"):
+            fechas[iid][ciudad].append(entry["sell_price_max_date"])
 
     # Tabla combinada
     tbl = Table(box=box.ROUNDED)
@@ -997,6 +1061,7 @@ def menu_insumos_pesca(config):
         color = ENCH_COLORS[nivel]
         nombre_corto = nombre.replace("Salsa ", "")
         tbl.add_column(f"[{color}]{nombre_corto}[/]", justify="right")
+        tbl.add_column("Actualizado", justify="right")
 
     for city in CITIES:
         row = [city]
@@ -1015,6 +1080,8 @@ def menu_insumos_pesca(config):
                     row.append(f"[red]${format_price(val)}[/]")
                 else:
                     row.append(f"${format_price(val)}")
+            fresca = antiguedad(_fecha_fresca(fechas, [sid], city))
+            row.append(fresca or "[dim]—[/]")
         tbl.add_row(*row)
 
     # Info por salsa en grid: salsa | receta | ciudad + precio
@@ -1132,20 +1199,7 @@ def _id_a_nombre(config):
     return m
 
 
-def _tabla_insumos(filas):
-    """Tabla de insumos: Recurso | Cant. | Ciudad | Precio c/u | Total."""
-    t = Table(box=box.ROUNDED, show_edge=False, padding=(0, 1))
-    t.add_column("Recurso", style="cyan")
-    t.add_column("Cant.", justify="right")
-    t.add_column("Ciudad")
-    t.add_column("Precio c/u", justify="right")
-    t.add_column("Total", justify="right")
-    for rec, cant, ciudad, pu, total in filas:
-        if total > 0:
-            t.add_row(rec, str(cant), f"[bold]{ciudad}[/]", f"${pu:,}", f"[bold green]${total:,}[/]")
-        else:
-            t.add_row(rec, str(cant), "[dim]N/D[/]", "[dim]N/D[/]", "[dim]sin datos[/]")
-    return t
+
 
 
 def ver_detalle_insumo(nombre, item_id, config):
@@ -1177,28 +1231,42 @@ def ver_detalle_insumo(nombre, item_id, config):
 
     # Agrupar precios por item_id
     precios_grp = {}
+    fechas = {}  # item_id -> ciudad -> [timestamps min/max de la API]
     for entry in raw_data:
         # Solo precios de calidad normal (1): el helper compara el item base.
         if entry.get("quality", 1) != 1:
             continue
         iid = entry["item_id"]
-        precios_grp.setdefault(iid, {})[entry["city"]] = entry.get("sell_price_min", 0)
+        ciudad = entry["city"]
+        precios_grp.setdefault(iid, {})[ciudad] = entry.get("sell_price_min", 0)
+        # Los timestamps no entran en `precios_grp` (contrato de market_summary):
+        # van en paralelo para la columna "Actualizado". Solo cuando la fila
+        # tiene precio real: la API manda "0001-01-01T00:00:00" como centinela
+        # en ciudades sin ventas (fila N/D -> columna con guion).
+        fechas.setdefault(iid, {}).setdefault(ciudad, [])
+        if entry.get("sell_price_min", 0) > 0 and entry.get("sell_price_min_date"):
+            fechas[iid][ciudad].append(entry["sell_price_min_date"])
+        if entry.get("sell_price_max", 0) > 0 and entry.get("sell_price_max_date"):
+            fechas[iid][ciudad].append(entry["sell_price_max_date"])
 
     salsa_prices = precios_grp.get(item_id, {})
 
-    # ── Tabla combinada: Ciudad | Alga | Carne | Venta ──
+    # ── Tabla combinada: Ciudad | Alga | Carne | Venta | Actualizado ──
     tbl = Table(box=box.ROUNDED)
     tbl.add_column("Ciudad", style="cyan")
 
     cols_info = []  # [(titulo_columna, dict_precios_por_ciudad)]
+    items_fila = [item_id]  # ids que alimentan la fila (para la frescura)
     if receta:
         for ing_id in sorted(receta.keys(), key=lambda i: id_to_nombre.get(i, i)):
+            items_fila.append(ing_id)
             col_title = _acortar_nombre(id_to_nombre.get(ing_id, ing_id))
             cols_info.append((col_title, precios_grp.get(ing_id, {})))
     cols_info.append(("Venta", salsa_prices))
 
     for title, _ in cols_info:
         tbl.add_column(title, justify="right")
+    tbl.add_column("Actualizado", justify="right")
 
     for city in CITIES:
         row = [city]
@@ -1216,89 +1284,17 @@ def ver_detalle_insumo(nombre, item_id, config):
                     row.append(f"[red]${format_price(val)}[/]")
                 else:
                     row.append(f"${format_price(val)}")
+        fresca = antiguedad(_fecha_fresca(fechas, items_fila, city))
+        row.append(fresca or "[dim]—[/]")
         tbl.add_row(*row)
     console.print(tbl)
 
-    # ── Panel de rentabilidad ──
-    if receta and salsa_prices:
-        salsa_vals = valores_positivos(salsa_prices)
-        if salsa_vals:
-            mejor_ciudad_venta, mejor_venta = mejor_ciudad(salsa_prices)
-
-            contenido = []
-            contenido.append(Text.from_markup(f"  [bold]{nombre}[/]"))
-
-            # Receta dentro del panel: cantidad x ingrediente
-            receta_parts = []
-            for ing_id, cantidad in receta.items():
-                ing_nombre = id_to_nombre.get(ing_id, ing_id)
-                receta_parts.append(f"{cantidad} x {ing_nombre}")
-            contenido.append(Text.from_markup(f"    [dim]Receta:[/] {' + '.join(receta_parts)}"))
-
-            contenido.append(Text.from_markup(f"    Venta en [bold]{mejor_ciudad_venta}[/]: [green]${mejor_venta:,}[/]"))
-            contenido.append(Text.from_markup(""))
-
-            # ── Insumos (precio menor por ciudad) ──
-            costo_total = 0
-            filas_compra = []
-            for ing_id, cantidad in receta.items():
-                ing_nombre = id_to_nombre.get(ing_id, ing_id)
-                ing_prices = precios_grp.get(ing_id, {})
-                ing_vals = valores_positivos(ing_prices)
-                if ing_vals:
-                    ciudad_compra, precio_compra = mejor_ciudad(ing_prices, "min")
-                    costo = precio_compra * cantidad
-                    costo_total += costo
-                    filas_compra.append((ing_nombre, cantidad, ciudad_compra, precio_compra, costo))
-                else:
-                    filas_compra.append((ing_nombre, cantidad, "N/D", 0, 0))
-
-            contenido.append(Text.from_markup("  [bold]Insumos (precio menor por ciudad):[/]"))
-            contenido.append(_tabla_insumos(filas_compra))
-            contenido.append(Text.from_markup(f"    [bold]Costo total:[/]        [bold]${costo_total:,}[/]"))
-            ganancia = mejor_venta - costo_total
-            margen = pct(ganancia, costo_total)
-            signo_ganancia = color_signo(ganancia)
-            if ganancia >= 0:
-                contenido.append(Text.from_markup(f"    [bold {signo_ganancia}]Ganancia:[/]         +${ganancia:,}  ({margen:.1f}%)"))
-            else:
-                contenido.append(Text.from_markup(f"    [bold {signo_ganancia}]Perdida:[/]          ${ganancia:,}  ({margen:.1f}%)"))
-
-            # ── vs vender insumos por separado ──
-            contenido.append(Text.from_markup(""))
-            contenido.append(Text.from_markup("  [bold]vs vender insumos por separado:[/]"))
-            valor_insumos = 0
-            filas_venta = []
-            for ing_id, cantidad in receta.items():
-                ing_nombre = id_to_nombre.get(ing_id, ing_id)
-                ing_prices = precios_grp.get(ing_id, {})
-                ing_vals = valores_positivos(ing_prices)
-                if ing_vals:
-                    ciudad_vta, precio_vta = mejor_ciudad(ing_prices)
-                    valor = precio_vta * cantidad
-                    valor_insumos += valor
-                    filas_venta.append((ing_nombre, cantidad, ciudad_vta, precio_vta, valor))
-                else:
-                    filas_venta.append((ing_nombre, cantidad, "N/D", 0, 0))
-            contenido.append(_tabla_insumos(filas_venta))
-            contenido.append(Text.from_markup(f"    [bold]Total:[/]              [bold]${valor_insumos:,}[/]"))
-
-            # ── TOTAL por salsa ──
-            contenido.append(Text.from_markup(""))
-            contenido.append(Text.from_markup(
-                f"  [bold cyan]TOTAL por salsa:[/]  costo [bold]${costo_total:,}[/]"
-                f"  ->  venta [bold green]${mejor_venta:,}[/]"
-                f"  ([bold {color_signo(ganancia)}]{ganancia:+,}[/])"
-            ))
-
-            console.print()
-            console.print(Panel(
-                Group(*contenido),
-                title="[bold]Analisis de rentabilidad[/]",
-                border_style="yellow",
-                box=box.HEAVY,
-                title_align="left",
-            ))
+# ── Receta (dato neutro, sin recomendaciones) ──
+    if receta:
+        receta_parts = [f"{cantidad} × {id_to_nombre.get(ing_id, ing_id)}"
+                        for ing_id, cantidad in receta.items()]
+        console.print()
+        console.print(Text.from_markup(f"  [bold]Receta:[/] {' + '.join(receta_parts)}"))
 
     # ── Historial 7d ──
     console.print()
@@ -1320,7 +1316,7 @@ def ver_detalle_insumo(nombre, item_id, config):
     recetas_config = config.get("insumos_pesca", {}).get("items", {})
     resumen = market_summary(precios_grp, item_id, recetas_config, volumen=_volumen_por_ciudad(hist))
     console.print()
-    _panel_resumen(resumen, mostrar_ingrediente=True)
+    _panel_resumen(resumen)
 
     console.print()
     _hint_detalle()

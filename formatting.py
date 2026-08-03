@@ -3,10 +3,51 @@
 # Funciones PURAS: todo lo que necesitan entra por parametros.
 # No tocan la red, no leen config, no imprimen por si solas.
 
+from datetime import datetime, timezone
+
+
 def format_price(val):
     if val is None or val == 0:
         return "N/D"
     return f"{val:,}"
+
+
+def antiguedad(iso, ahora=None):
+    """Convierte un timestamp ISO 8601 a texto relativo en espanol.
+
+    "2026-08-02T12:20:00" -> "hace 10 s" / "hace 5 min" / "hace 3 h" /
+    "hace 2 d" (singular: "hace 1 min", "hace 1 h", "hace 1 d").
+    Devuelve "" si el timestamp falta, es None o no se puede interpretar;
+    la UI muestra un guion en esos casos. `ahora` es opcional y sirve
+    para pruebas deterministicas; si no se pasa, usa la hora actual UTC.
+    Los timestamps naive (como los de la API de Albion) se tratan como UTC.
+    """
+    if not iso:
+        return ""
+    if isinstance(iso, datetime):
+        fecha = iso
+    else:
+        try:
+            fecha = datetime.fromisoformat(str(iso))
+        except (ValueError, TypeError):
+            return ""
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=timezone.utc)
+    # Centinela de la API de Albion en ciudades sin ventas: "0001-01-01T00:00:00".
+    # No es un dato real; devolvemos "" (la UI muestra el guion).
+    if fecha.year < 2000:
+        return ""
+    ahora = ahora or datetime.now(timezone.utc)
+    if ahora.tzinfo is None:
+        ahora = ahora.replace(tzinfo=timezone.utc)
+    seg = max(0, int((ahora - fecha).total_seconds()))
+    if seg < 60:
+        return f"hace {seg} s"
+    if seg < 3600:
+        return f"hace {seg // 60} min"
+    if seg < 86400:
+        return f"hace {seg // 3600} h"
+    return f"hace {seg // 86400} d"
 
 
 def _formatear_historial(hist_data, label, unidad="uds"):
