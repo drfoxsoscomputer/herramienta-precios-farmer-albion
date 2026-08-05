@@ -64,18 +64,34 @@ Nota de alcance: FASE D (historial extendido + favoritos) queda FUERA de este ca
 
 ## Phase C: Buscador global
 
-- [ ] 4.1 En `formatting.py`, agregar `normalizar(texto)` con `unicodedata.normalize("NFD", ...)` + filtro de marcas `Mn` + lowercase (ignora tildes y ñ).
-  - Archivos: `formatting.py` · Criterio: `normalizar("tiburón") == normalizar("tiburon")` · Dep: ninguna
-- [ ] 4.2 En `textos.py`, agregar `MAPA_BUSQUEDA` (nombre español → technical_id) para items populares no cubiertos por el catálogo (ej. "tiburón" → `T8_FISH_SALTWATER_ALL_BOSS_SHARK`, journals).
-  - Archivos: `textos.py` · Criterio: el mapeo cubre al menos los items populares de la spec · Dep: ninguna
-- [ ] 4.3 En `menus.py`, crear `_catalogo_busqueda(config)` → lista de (nombre, item_id, tipo) normalizada: pescados + recursos (crudo y refinado por tier) + insumos + `MAPA_BUSQUEDA`.
-  - Archivos: `menus.py` · Criterio: cubre los ~100 items del config; nombres normalizados una sola vez · Dep: 4.1, 4.2
-- [ ] 4.4 En `menus.py`, crear `_entrada_texto()`: buffer char a char con `_leer_tecla()` (Enter confirma, Esc cancela), consistente con el selector (sin `Prompt.ask`).
-  - Archivos: `menus.py` · Criterio: devuelve el texto ingresado o None al cancelar; no mezcla estilos Rich · Dep: ninguna
-- [ ] 4.5 En `menus.py`, agregar la opción "Buscar" en `menu_principal`: flujo `_entrada_texto` → `normalizar` → filtrar `_catalogo_busqueda` → `_menu_seleccion` → Enter abre el detalle con market_summary; sin resultados → mensaje informativo.
-  - Archivos: `menus.py` · Criterio: "pez" lista los peces con "pez" en el nombre; búsqueda con acentos funciona; Enter en un resultado muestra el detalle · Dep: 4.3, 4.4, 3.3
-- [ ] 4.6 Crear `tests/test_busqueda.py`: búsqueda parcial, búsqueda sin acentos, "tiburón" → shark, sin resultados → lista vacía sin error.
-  - Archivos: `tests/test_busqueda.py` · Criterio: pasa con `python -X utf8 tests/test_busqueda.py` · Dep: 4.5
+> NOTA DE APLICACIÓN (slice apply 3, plan Fase C del usuario): la implementación
+> siguió el plan refinado del usuario, que reemplaza los detalles de 4.1-4.6:
+> `normalizar()` vive en `catalogo.py` (nuevo, descarga items.json -> catalog.json
+> junto a la app) en vez de formatting.py; NO se creó `MAPA_BUSQUEDA` en textos.py
+> (el catálogo completo cubre el mapeo nombre-esp -> technical_id); el input de
+> texto es `menu_buscar()` con filtrado EN VIVO (no `_entrada_texto` + selector
+> separado); el detalle del buscador (`ver_detalle_buscado`) usa UNA llamada
+> get_prices sin resumen/volumen y sin market_summary; la batería es
+> `tests/test_catalogo.py` (no test_busqueda.py). El E2E de regression_fase2 NO
+> hardcodea el número de opciones del menú principal (presiona teclas 1-7 y
+> mockea submenús), por lo que no requirió ajuste.
+
+- [x] 4.1 En `catalogo.py` (NUEVO, en lugar de formatting.py), agregar `normalizar(texto)` con `unicodedata.normalize("NFD", ...)` + filtro de marcas `Mn` + lowercase (ignora tildes y ñ).
+  - Archivos: `catalogo.py` · Criterio: `normalizar("tiburón") == normalizar("tiburon")` · Dep: ninguna
+- [x] 4.2 Catálogo local con descarga única: `items.json` (ao-bin-dumps) -> `catalog.json` junto a la app si no existe; si la descarga falla, error amigable sin crash. (Reemplaza MAPA_BUSQUEDA: el catálogo completo cubre el mapeo nombre-esp -> technical_id.)
+  - Archivos: `catalogo.py` · Criterio: buscar() funciona con índice en memoria (tests con fixture local, sin red); descarga fallida -> None + aviso · Dep: 4.1
+- [x] 4.3 En `catalogo.py`, `buscar(consulta)`: tokens AND contra nombre ES-ES + UniqueName normalizados, dedupe por UniqueName base (@1..@4 -> base), máx 15 resultados, detección de tipo (_JOURNAL -> diario, con @ -> arma, resto -> simple), nombres limpios (sin " (parcialmente lleno)").
+  - Archivos: `catalogo.py` · Criterio: "arco" agrupa las 5 variantes en 1 resultado tipo arma · Dep: 4.2
+- [x] 4.4 En `menus.py`, `menu_buscar(config)`: input de texto en vivo con Backspace (reusa `_leer_tecla`), Esc vuelve (primero limpia la consulta), Enter abre el detalle. (Reemplaza `_entrada_texto` separada.)
+  - Archivos: `menus.py` · Criterio: escritura char a char filtra en vivo; sin Prompt.ask · Dep: 4.3
+- [x] 4.5 En `menus.py`, opción 8 "Buscar" en `menu_principal` (índices 1-7 intactos) + `ver_detalle_buscado(item, config)`: UNA llamada get_prices sin volumen ni resumen; tipos arma (5 paneles base/.1/.2/.3/.4, tabla 11 columnas con 5 calidades), diario (Ciudad|Vacío|Lleno con {base}_EMPTY/_FULL) y simple (1 panel 5 calidades); header `_panel_detalle` + footer `_hint_detalle()`.
+  - Archivos: `menus.py`, `textos.py` (CALIDADES + reseñas) · Criterio: ver_detalle_buscado hace 1 sola llamada por tipo; E2E regression_fase2 sigue PASS sin cambios · Dep: 4.4
+- [x] 4.6 Crear `tests/test_catalogo.py` (fixtures locales, sin descargar 23MB): normalizar, AND tokens, dedupe, detección de tipo, limpieza "(parcialmente lleno)", límite 15, sin red, descarga fallida.
+  - Archivos: `tests/test_catalogo.py` · Criterio: pasa con `python -X utf8 tests/test_catalogo.py` · Dep: 4.5
+- [x] (EXTRA Fase C) `formatting.py`: `resumen_ciudad(hist)` pura (promedio ponderado por item_count, rango min-max, cambio % actual vs promedio, None sin datos) + `_formatear_historial` pasa a datos CRUDOS de get_history_raw e incluye `(promedio $X · rango min-max · ±Y%)` por ciudad manteniendo ancho dinámico y Total alineado.
+  - Archivos: `formatting.py`, `menus.py` (los 3 detalles usan get_history_raw, sin duplicar llamadas), `tests/test_market_summary.py` (secciones 8-10) · Criterio: resumen_ciudad con serie fake + línea de historial con rango/cambio % · Dep: 4.1
+- [x] (EXTRA Fase C) `menu_insumos_pesca`: ELIMINADO el panel "Volumen 7 dias" + `get_history(salsa_ids)`; la grilla de recetas queda solo receta (sin ciudad/precio único).
+  - Archivos: `menus.py` · Criterio: smoke render sin "Volumen 7 dias" y sin $ en la grilla · Dep: ninguna
 
 ## Phase E: Selección de servidor
 

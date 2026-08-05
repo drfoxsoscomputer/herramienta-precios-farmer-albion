@@ -51,20 +51,82 @@ def antiguedad(iso, ahora=None):
 
 
 def _formatear_historial(hist_data, label, unidad="uds"):
-    """Arma lineas de historial por ciudad para un item."""
+    """Arma lineas de historial por ciudad para un item.
+
+    hist_data: lista CRUDA de get_history_raw — entries con data[] de
+    {timestamp, item_count, avg_price} por ciudad. De cada ciudad se muestra
+    volumen total, promedio ponderado y el resumen (rango + cambio %) via
+    resumen_ciudad. El Total queda alineado con el ancho dinamico del volumen.
+    """
     if not hist_data:
         return []
+    por_ciudad = {}
+    for entry in hist_data:
+        if not isinstance(entry, dict):
+            continue
+        city = entry.get("location")
+        pts = [p for p in (entry.get("data") or []) if isinstance(p, dict)]
+        vol = sum(p.get("item_count", 0) for p in pts)
+        if vol == 0:
+            continue
+        por_ciudad[city] = (vol, resumen_ciudad(pts))
+    if not por_ciudad:
+        return []
     lines = [f"  [bold]{label}[/]:"]
-    total_vol = sum(h["volumen"] for h in hist_data.values())
+    total_vol = sum(v for v, _ in por_ciudad.values())
     # Ancho dinamico de la columna de volumen: se adapta a la cifra mas larga
     # (incluido el Total) para que "uds" y el promedio queden alineados siempre.
-    ancho_vol = max([len(f"{d['volumen']:,}") for d in hist_data.values()] + [len(f"{total_vol:,}")])
-    for city in sorted(hist_data, key=lambda c: hist_data[c]["volumen"], reverse=True):
-        d = hist_data[city]
-        lines.append(f"    {city:15s} {d['volumen']:>{ancho_vol},} {unidad}  (promedio ${d['avg_price']:,})")
-    avg = round(sum(h["avg_price"] * h["volumen"] for h in hist_data.values()) / total_vol)
+    ancho_vol = max([len(f"{v:,}") for v, _ in por_ciudad.values()] + [len(f"{total_vol:,}")])
+    for city in sorted(por_ciudad, key=lambda c: por_ciudad[c][0], reverse=True):
+        vol, res = por_ciudad[city]
+        extra = ""
+        if res:
+            signo = "+" if res["cambio_pct"] >= 0 else ""
+            extra = (f" · rango {res['rango_min']:,}-{res['rango_max']:,}"
+                     f" · {signo}{res['cambio_pct']:.1f}%")
+        lines.append(f"    {city:15s} {vol:>{ancho_vol},} {unidad}  (promedio ${res['promedio']:,}{extra})")
+    avg = round(sum(res["promedio"] * v for v, res in por_ciudad.values()) / total_vol)
     lines.append(f"    {'Total':15s} {total_vol:>{ancho_vol},} {unidad}  (promedio ${avg:,})")
     return lines
+
+
+def resumen_ciudad(serie):
+    """Resumen por ciudad de una serie de historial CRUDA.
+
+    serie: data[] de un entry de get_history_raw, una lista de dicts
+    {timestamp, item_count, avg_price} (orden cronologico de la API).
+
+    Devuelve dict:
+      promedio   -> media ponderada por item_count de avg_price
+      rango_min  -> menor avg_price de la serie
+      rango_max  -> mayor avg_price de la serie
+      cambio_pct -> variacion % del ULTIMO precio (el mas reciente) contra
+                    el promedio ponderado (precio actual vs promedio)
+
+    None si no hay datos (serie vacia, None o sin puntos con item_count > 0).
+    """
+    if not serie:
+        return None
+    pts = [p for p in serie if isinstance(p, dict) and (p.get("item_count") or 0) > 0]
+    if not pts:
+        return None
+    total = sum(p["item_count"] for p in pts)
+    if total <= 0:
+        return None
+    try:
+        pts = sorted(pts, key=lambda p: p.get("timestamp", ""))
+    except TypeError:
+        pass
+    promedio = round(sum(p["avg_price"] * p["item_count"] for p in pts) / total)
+    precios = [p["avg_price"] for p in pts]
+    actual = pts[-1]["avg_price"]
+    cambio_pct = (actual - promedio) / promedio * 100 if promedio else 0.0
+    return {
+        "promedio": promedio,
+        "rango_min": min(precios),
+        "rango_max": max(precios),
+        "cambio_pct": cambio_pct,
+    }
 
 
 def color_precio(valor, mejor_valor, peor_valor):

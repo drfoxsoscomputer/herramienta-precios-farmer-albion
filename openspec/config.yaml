@@ -30,9 +30,9 @@ rules:
   apply:
     - Follow existing code patterns
     tdd: false
-    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py"
+    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py && python -X utf8 tests/test_antiguedad.py && python -X utf8 tests/test_catalogo.py"
   verify:
-    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py"
+    test_command: "python -X utf8 tests/regression_fase2.py && python -X utf8 tests/test_api_cache.py && python -X utf8 tests/test_recursos_t8.py && python -X utf8 tests/test_market_summary.py && python -X utf8 tests/test_antiguedad.py && python -X utf8 tests/test_catalogo.py"
     build_command: ""
     coverage_threshold: 0
   archive:

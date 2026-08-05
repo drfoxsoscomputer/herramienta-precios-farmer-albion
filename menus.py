@@ -21,19 +21,29 @@ from rich.text import Text
 from rich import box
 
 from constants import CITIES, COLORES_TIER, REF_MAP, ENCH_NOMBRES, ENCH_COLORS
-from api import get_prices, get_history
+from api import get_prices, get_history_raw
 from formatting import (format_price, _formatear_historial, color_precio, color_item,
-                        valores_positivos, mejor_ciudad, market_summary, antiguedad)
+                        market_summary, antiguedad)
 from textos import (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL,
-                    RESUMEN, PARES_RECURSO)
+                    RESUMEN, PARES_RECURSO, CALIDADES)
+import catalogo
 
 console = Console()
 
 
 def _volumen_por_ciudad(hist):
     """{ciudad: volumen} del historial 7d (para desempatar min/max en
-    market_summary). El historial viene {ciudad: {volumen, avg_price}}."""
-    return {c: d["volumen"] for c, d in (hist or {}).items()}
+    market_summary). `hist` es la lista CRUDA de get_history_raw: entries
+    con data[] de {timestamp, item_count, avg_price} por ciudad."""
+    if not hist:
+        return {}
+    result = {}
+    for entry in hist:
+        city = entry.get("location")
+        vol = sum(p.get("item_count", 0) for p in (entry.get("data") or []))
+        if vol > 0:
+            result[city] = vol
+    return result
 
 
 def _fecha_fresca(fechas, items, ciudad):
@@ -215,8 +225,9 @@ def limpiar_pantalla():
 def _escribir_fila(fila, texto):
     """Escribe UNA linea del frame en su fila (0-based) sin tocar el resto.
 
-    ANSI puro: mueve el cursor a la fila, escribe el texto (que ya trae sus
-    colores ANSI del render en buffer) y borra hasta el final de la linea.
+    Consola legacy Windows (sin VT): API nativa. Con VT / Unix / redireccion:
+    ANSI puro (mueve el cursor a la fila, escribe el texto que ya trae sus
+    colores ANSI del render en buffer y borra hasta el final de la linea).
     Asi la navegacion no re-dibuja todo el frame: solo las filas que cambiaron.
     """
     console.control(_RawControl(f"\x1b[{fila + 1};1H{texto}\x1b[K"))
@@ -556,7 +567,7 @@ def reiniciar():
 
 def _pausa_volver():
     """Pantallas de detalle: espera UNA tecla sin prompt de texto.
-    Esc/Enter -> vuelve al listado; F5 -> recarga la app; el resto se ignora."""
+    Esc/Enter -> vuelve al listado; R -> recarga la app; el resto se ignora."""
     while True:
         tecla = _leer_tecla()
         if tecla in ("esc", "enter"):
@@ -610,11 +621,11 @@ def _confirmar_salida():
 
 # ─── Menu Principal ───────────────────────────────────────────
 def menu_principal(config):
-    # 1 Pesca · 2-6 recursos como "crudo/refinado" (PARES_RECURSO) · 7 Salsas.
+    # 1 Pesca · 2-6 recursos como "crudo/refinado" (PARES_RECURSO) · 7 Salsas · 8 Buscar.
     # Los indices 1-7 NO cambian: el ruteo por `seccion` sigue intacto.
     nombres = (["Pesca"]
                + [PARES_RECURSO[k] for k in ("fibra", "madera", "cuero", "mineral", "piedra")]
-               + ["Salsas de pescado"])
+               + ["Salsas de pescado", "Buscar"])
     while True:
         panel = Panel(
             f"  [dim]{RESENAS_MENU['principal']}[/]",
@@ -638,6 +649,8 @@ def menu_principal(config):
             if _confirmar_salida():
                 console.print("\n[bold green]Que la plata te sobre![/]")
                 break
+        elif idx == 7:
+            menu_buscar(config)
         elif 0 <= idx <= 6:
             seccion = idx + 1
             if seccion == 1:
@@ -654,6 +667,221 @@ def menu_principal(config):
                 ver_recurso(config, "piedra")
             elif seccion == 7:
                 menu_insumos_pesca(config)
+
+
+# ─── Buscador global ──────────────────────────────────────────
+def menu_buscar(config):
+    """Buscador global: escritura en vivo con Backspace (reusa _leer_tecla).
+
+    Cada tecla re-filtra el catalogo (normalizado, tokens AND). ↑/↓ mueven
+    el cursor, Enter abre el detalle del item seleccionado, Esc vuelve
+    (primero limpia la consulta si hay texto), R recarga la app.
+    """
+    texto = ""
+    cursor = 0
+    while True:
+        resultados = catalogo.buscar(texto)
+        cursor = min(cursor, max(0, len(resultados) - 1)) if resultados else 0
+
+        # ── Render del frame completo en un buffer (misma tecnica del selector) ──
+        titulo = Panel(
+            f"  [dim]{RESENAS_MENU['buscar']}[/]",
+            title="[bold cyan]Buscar[/]",
+            border_style="cyan",
+            box=box.ROUNDED,
+            expand=True,
+        )
+        buf = io.StringIO()
+        ancho = console.width if console.width else 120
+        alto = console.height if console.height else 50
+        fc = Console(file=buf, force_terminal=True, width=ancho, height=alto,
+                     highlight=False, color_system="truecolor")
+        fc.print(titulo)
+        fc.print()
+        fc.print(f"  [bold]Consulta:[/] {texto}\u258c")
+        fc.print()
+        if not texto:
+            fc.print("  [dim]Escribe para buscar...[/]")
+        elif not resultados:
+            fc.print("  [dim]Sin resultados para tu consulta.[/]")
+        else:
+            for i, item in enumerate(resultados):
+                nombre = item["nombre"].replace("[", "\\[").replace("]", "\\]")
+                etiqueta = f"{i + 1:>2}"
+                if i == cursor:
+                    fc.print(f"  [black on cyan][ {etiqueta} ] {nombre}[/]")
+                else:
+                    fc.print(f"  [ {etiqueta} ] {nombre}")
+            fc.print()
+            fc.print(f"  [dim]{len(resultados)} resultado(s) · ↑/↓ mover · Enter abrir[/]")
+        fc.print()
+        fc.print(Panel(
+            "  [dim]Escribir filtra · [yellow]↑/↓[/] mover · [yellow]Enter[/] abrir"
+            " · [yellow]Esc[/] volver · [yellow]F5[/] recargar[/]",
+            border_style="cyan",
+            box=box.ROUNDED,
+            expand=True,
+        ))
+        lineas = buf.getvalue().split("\n")
+        while lineas and lineas[-1] == "":
+            lineas.pop()
+        limpiar_pantalla()
+        console.control(_RawControl("\n".join(lineas) + "\n"))
+        try:
+            console.file.flush()
+        except Exception:
+            pass
+
+        tecla = _leer_tecla()
+        if tecla is None:
+            continue
+        if tecla == "esc":
+            if texto:
+                texto = ""
+                cursor = 0
+            else:
+                return
+        elif tecla == "enter":
+            if resultados:
+                ver_detalle_buscado(resultados[cursor], config)
+        elif tecla in ("up", "down") and resultados:
+            if tecla == "up":
+                cursor = (cursor - 1) % len(resultados)
+            else:
+                cursor = (cursor + 1) % len(resultados)
+        elif tecla == "f5":
+            reiniciar()
+        elif tecla in ("\x08", "\x7f"):  # Backspace
+            if texto:
+                texto = texto[:-1]
+                cursor = 0
+        elif len(tecla) == 1 and tecla.isprintable():
+            texto += tecla
+            cursor = 0
+
+
+def _celda_calidad(val, vals):
+    """Celda de precio por calidad: verde el mayor, rojo el menor, '—' sin datos."""
+    if val == 0 or not vals:
+        return "[dim]—[/]"
+    if val == max(vals):
+        return f"[bold green]${format_price(val)}[/]"
+    if val == min(vals):
+        return f"[red]${format_price(val)}[/]"
+    return f"${format_price(val)}"
+
+
+def _tabla_calidades(columnas, precios, fechas):
+    """Tabla `Ciudad | (calidad | Act)` por item.
+
+    columnas: [(item_id, etiqueta, calidad), ...] en orden de la tabla.
+    precios:  {item_id: {calidad: {ciudad: precio}}}.
+    fechas:   {item_id: {calidad: {ciudad: [timestamps ISO]}}}.
+    Colores por calidad: verde el mayor de la columna, rojo el menor, '—'
+    sin datos. La columna 'Act' muestra la frescura de cada celda.
+    'Sobresaliente' se abrevia a 'Sobresal.' en el encabezado para que las 11
+    columnas entren en 120 de ancho (la calidad interna sigue siendo 4).
+    """
+    ABREV = {"Sobresaliente": "Sobresal."}
+    tbl = Table(box=box.ROUNDED)
+    tbl.add_column("Ciudad", style="cyan")
+    for _, etiq, _ in columnas:
+        tbl.add_column(ABREV.get(etiq, etiq), justify="right")
+        tbl.add_column("Act", justify="right")
+    for city in CITIES:
+        row = [city]
+        for iid, _, calidad in columnas:
+            px = precios.get(iid, {}).get(calidad, {})
+            val = px.get(city, 0)
+            vals = [v for v in px.values() if v > 0]
+            row.append(_celda_calidad(val, vals))
+            ts = fechas.get(iid, {}).get(calidad, {}).get(city, [])
+            fresca = antiguedad(max(ts)) if ts else ""
+            row.append(fresca or "[dim]—[/]")
+        tbl.add_row(*row)
+    return tbl
+
+
+def ver_detalle_buscado(item, config):
+    """Detalle de un item del buscador: UNA llamada get_prices, sin volumen,
+    sin resumen. Segun el tipo detectado por el catalogo:
+      - arma:   5 paneles apilados (base/.1/.2/.3/.4), cada uno con las 5
+                calidades por ciudad (11 columnas).
+      - diario: tabla Ciudad | Vacío | Lleno (consulta {base}_EMPTY/_FULL).
+      - simple: un solo panel con las 5 calidades.
+    """
+    limpiar_pantalla()
+    id_base = item["id_base"]
+    tipo = item["tipo"]
+
+    # Color del header: el del tier si se puede extraer; si no, blanco neutro.
+    try:
+        _, color = info_tier(id_base)
+    except Exception:
+        color = "white"
+
+    _panel_detalle(
+        item["nombre"], color,
+        f"  [dim]{id_base}[/]\n\n  {RESENAS_DETALLE['buscado']}",
+    )
+
+    if tipo == "diario":
+        base = id_base
+        for suf in ("_EMPTY", "_FULL"):
+            if base.endswith(suf):
+                base = base[: -len(suf)]
+                break
+        ids = [f"{base}_EMPTY", f"{base}_FULL"]
+    elif tipo == "arma":
+        ids = [id_base] + [f"{id_base}@{i}" for i in range(1, 5)]
+    else:
+        ids = [id_base]
+
+    raw_data = get_prices(ids)
+    if not raw_data:
+        _hint_detalle()
+        _pausa_volver()
+        return
+
+    precios = {}  # item_id -> calidad -> {ciudad: precio}
+    fechas = {}   # item_id -> calidad -> ciudad -> [timestamps ISO]
+    for entry in raw_data:
+        iid = entry.get("item_id", "")
+        if iid not in ids:
+            continue
+        ciudad = entry.get("city", "")
+        calidad = entry.get("quality", 1)
+        precio = entry.get("sell_price_min", 0)
+        precios.setdefault(iid, {}).setdefault(calidad, {})[ciudad] = precio
+        fechas.setdefault(iid, {}).setdefault(calidad, {}).setdefault(ciudad, [])
+        if precio > 0 and entry.get("sell_price_min_date"):
+            fechas[iid][calidad][ciudad].append(entry["sell_price_min_date"])
+        if entry.get("sell_price_max", 0) > 0 and entry.get("sell_price_max_date"):
+            fechas[iid][calidad][ciudad].append(entry["sell_price_max_date"])
+
+    if tipo == "diario":
+        columnas = [(ids[0], "Vacío", 1), (ids[1], "Lleno", 1)]
+        console.print(_tabla_calidades(columnas, precios, fechas))
+    elif tipo == "arma":
+        paneles = [("Base", id_base)] + [(f".{i}", f"{id_base}@{i}") for i in range(1, 5)]
+        for etiq, iid in paneles:
+            columnas = [(iid, cal, i + 1) for i, cal in enumerate(CALIDADES)]
+            console.print(Panel(
+                _tabla_calidades(columnas, precios, fechas),
+                title=f"[bold]{etiq}[/]",
+                border_style="cyan",
+                box=box.ROUNDED,
+                title_align="left",
+                expand=False,
+            ))
+            console.print()
+    else:
+        columnas = [(id_base, cal, i + 1) for i, cal in enumerate(CALIDADES)]
+        console.print(_tabla_calidades(columnas, precios, fechas))
+
+    console.print()
+    _hint_detalle()
+    _pausa_volver()
 
 
 # ─── Pesca ────────────────────────────────────────────────────
@@ -760,12 +988,12 @@ def ver_detalle_pez(nombre, item_id, trozos, tipo, config=None):
     # ─── Historial 7d (si disponible) ───────────────────────────
     console.print()
     console.print("[dim]Consultando historial de mercado...[/]")
-    hist_entero = get_history(item_id)
+    hist_entero = get_history_raw(item_id)
     time.sleep(0.5)
-    hist_trozos = get_history("T1_FISHCHOPS")
+    hist_trozos = get_history_raw("T1_FISHCHOPS")
 
-    vol_entero_total = sum(h["volumen"] for h in hist_entero.values())
-    vol_trozos_total = sum(h["volumen"] for h in hist_trozos.values())
+    vol_entero_total = sum(_volumen_por_ciudad(hist_entero).values())
+    vol_trozos_total = sum(_volumen_por_ciudad(hist_trozos).values())
 
     if vol_entero_total > 0 or vol_trozos_total > 0:
         hist_parts = []
@@ -974,13 +1202,13 @@ def _ver_detalle_recurso(nombre, tier_key, tier_data, modo="todo"):
     console.print("[dim]Consultando historial de mercado...[/]")
     hist_parts = []
     if modo == "crudo" or modo == "todo":
-        hist_crudo = get_history(crudo_id)
-        if sum(h["volumen"] for h in hist_crudo.values()) > 0:
+        hist_crudo = get_history_raw(crudo_id)
+        if sum(_volumen_por_ciudad(hist_crudo).values()) > 0:
             hist_parts += _formatear_historial(hist_crudo, nombre_real)
         time.sleep(0.5)
     if modo == "refinado" or modo == "todo":
-        hist_ref = get_history(refinado_id)
-        if sum(h["volumen"] for h in hist_ref.values()) > 0:
+        hist_ref = get_history_raw(refinado_id)
+        if sum(_volumen_por_ciudad(hist_ref).values()) > 0:
             hist_parts += _formatear_historial(hist_ref, ref_nombre)
     if hist_parts:
         console.print(Panel(
@@ -1086,9 +1314,8 @@ def menu_insumos_pesca(config):
             row.append(fresca or "[dim]—[/]")
         tbl.add_row(*row)
 
-    # Info por salsa en grid: salsa | receta | ciudad + precio
+    # Info por salsa en grid: salsa | receta (dato neutro, sin precio ni ciudad)
     grid = Table.grid(padding=(0, 3))
-    grid.add_column(no_wrap=True)
     grid.add_column(no_wrap=True)
     grid.add_column(no_wrap=True)
     for nombre, sid, receta in salsas:
@@ -1096,50 +1323,16 @@ def menu_insumos_pesca(config):
         color = ENCH_COLORS[nivel]
         nombre_corto = nombre.replace("Salsa ", "")
 
-        salsa_px = precios_grp.get(sid, {})
-        salsa_vals = valores_positivos(salsa_px)
-        if not salsa_vals:
-            continue
-
-        ciudad_venta, mejor_venta = mejor_ciudad(salsa_px)
-
         cant_carne = receta.get("T1_FISHCHOPS", 0)
         cant_alga = receta.get("T1_SEAWEED", 0)
 
         grid.add_row(
             f"[{color}]{nombre_corto}[/]",
             f"{cant_carne} Carne + {cant_alga} Alga",
-            f"[bold]{ciudad_venta}[/] ${mejor_venta:,}",
         )
 
-    # ── Volumen 7 dias en grid: salsa | total | top ciudad ──
-    console.print("[dim]Consultando historial...[/]")
-    hist_data = get_history(salsa_ids)
-    vol_grid = Table.grid(padding=(0, 3))
-    vol_grid.add_column(no_wrap=True)
-    vol_grid.add_column(no_wrap=True)
-    vol_grid.add_column(no_wrap=True)
-    hay_vol = False
-    for nombre, sid, _ in salsas:
-        hist = hist_data.get(sid, {})
-        vol_total = sum(h["volumen"] for h in hist.values())
-        if vol_total > 0:
-            hay_vol = True
-            nivel = int(sid.split("_LEVEL")[-1])
-            color = ENCH_COLORS[nivel]
-            nombre_corto = nombre.replace("Salsa ", "")
-            top = sorted(hist, key=lambda c: hist[c]["volumen"], reverse=True)[0]
-            vol_grid.add_row(
-                f"[{color}]{nombre_corto}[/]",
-                f"[bold]{vol_total:,}[/] uds",
-                f"{top}: {hist[top]['volumen']:,} uds",
-            )
-    vol_panel = (Panel(vol_grid, title="[bold]Volumen 7 dias[/]", border_style="cyan",
-                       box=box.ROUNDED, title_align="left", expand=False) if hay_vol
-                 else Text("  [dim]Sin datos de historial[/]"))
-
     # Selector: layout "listado arriba" — el header va arriba, los datos
-    # (tabla, recetas, volumen) van como bloque inferior.
+    # (tabla + recetas) van como bloque inferior.
     while True:
         opciones = []
         for nombre, sid, receta in salsas:
@@ -1165,7 +1358,6 @@ def menu_insumos_pesca(config):
             Text(""),
             grid,
             Text(""),
-            vol_panel,
         )
 
         idx = _menu_seleccion(opciones, titulo=titulo, titulo_abajo=titulo_abajo)
@@ -1301,8 +1493,8 @@ def ver_detalle_insumo(nombre, item_id, config):
     # ── Historial 7d ──
     console.print()
     console.print("[dim]Consultando historial de mercado...[/]")
-    hist = get_history(item_id)
-    vol_total = sum(h["volumen"] for h in hist.values())
+    hist = get_history_raw(item_id)
+    vol_total = sum(_volumen_por_ciudad(hist).values())
     if vol_total > 0:
         hist_parts = _formatear_historial(hist, nombre)
         console.print(Panel(

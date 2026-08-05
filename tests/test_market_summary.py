@@ -7,7 +7,7 @@ import sys
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from formatting import market_summary
+from formatting import market_summary, resumen_ciudad, _formatear_historial
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "albion_config.json")
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -89,5 +89,42 @@ r = market_summary(empate, "T4_DIRT", volumen=vol)
 assert r["min_ciudad"] == "Lymhurst", f"desempate min: {r}"
 assert r["max_ciudad"] == "Lymhurst", f"desempate max: {r}"
 print("PASS desempate por volumen: entre empate de 3, gana la de mayor volumen")
+
+# ── 8. resumen_ciudad: promedio ponderado, rango, cambio %, None ──
+# Serie cruda (data[] de get_history_raw): 3 puntos a $100 y 1 a $200.
+serie = [
+    {"timestamp": "2026-08-01T00:00:00", "item_count": 3, "avg_price": 100},
+    {"timestamp": "2026-08-01T01:00:00", "item_count": 1, "avg_price": 200},
+]
+r = resumen_ciudad(serie)
+assert r["promedio"] == 125, f"promedio ponderado (3*100 + 1*200)/4: {r}"
+assert r["rango_min"] == 100 and r["rango_max"] == 200, f"rango: {r}"
+esperado = (200 - 125) / 125 * 100  # precio actual (ultimo) vs promedio
+assert abs(r["cambio_pct"] - esperado) < 1e-9, f"cambio %: {r['cambio_pct']} vs {esperado}"
+print("PASS resumen_ciudad: promedio ponderado por item_count, rango min-max, cambio % actual vs promedio")
+
+# ── 9. resumen_ciudad: sin datos -> None ──────────────────────
+assert resumen_ciudad([]) is None, "serie vacia -> None"
+assert resumen_ciudad(None) is None, "None -> None"
+assert resumen_ciudad([{"timestamp": "x", "item_count": 0, "avg_price": 50}]) is None, "item_count 0 -> None"
+print("PASS resumen_ciudad: sin datos (vacia / None / sin ventas) -> None")
+
+# ── 10. _formatear_historial con datos CRUDOS: promedio · rango · cambio % ──
+hist_raw = [
+    {"location": "Thetford", "data": [
+        {"timestamp": "2026-08-01T00:00:00", "item_count": 10, "avg_price": 4000},
+        {"timestamp": "2026-08-01T01:00:00", "item_count": 20, "avg_price": 5000},
+    ]},
+    {"location": "Lymhurst", "data": [
+        {"timestamp": "2026-08-01T00:00:00", "item_count": 5, "avg_price": 3000},
+    ]},
+]
+lineas = _formatear_historial(hist_raw, "Entero")
+texto = "\n".join(lineas)
+assert "promedio $4,667" in texto, f"promedio ponderado en linea: {texto}"  # (4000*10+5000*20)/30
+assert "rango 4,000-5,000" in texto, f"rango en linea: {texto}"
+assert "+7.1%" in texto, f"cambio % con signo: {texto}"  # (5000-4667)/4667 = +7.1%
+assert "Total" in texto and "Lymhurst" in texto and "Thetford" in texto, texto
+print("PASS _formatear_historial crudo: (promedio $X · rango min-max · ±Y%) por ciudad, Total alineado")
 
 print("\nTODOS LOS TESTS DE MARKET_SUMMARY PASARON")

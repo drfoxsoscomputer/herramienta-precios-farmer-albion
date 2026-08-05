@@ -23,6 +23,10 @@ RESENAS_MENU = {
         "Elige una salsa. Veras su receta, el precio de venta por ciudad "
         "y el volumen de los ultimos 7 dias."
     ),
+    "buscar": (
+        "Escribe un termino (puede ser parcial y sin acentos) para filtrar "
+        "todo el catalogo de items: pesca, recursos, armas, diarios..."
+    ),
 }
 
 # ─── Resenas de las pantallas de detalle (bajo el titulo) ──────
@@ -39,7 +43,15 @@ RESENAS_DETALLE = {
         "Receta de la salsa y su mercado por ciudad: precio de venta y "
         "volumen de los ultimos 7 dias."
     ),
+    "buscado": (
+        "Precios por ciudad y calidad. Verde = el mayor precio de esa "
+        "columna, rojo = el menor, — = sin datos. En armas, cada "
+        "encantamiento (.1 a .4) es un panel aparte."
+    ),
 }
+
+# ─── Calidades de items (buscador global) ─────────────────────
+CALIDADES = ["Normal", "Bueno", "Notable", "Sobresaliente", "Obra maestra"]
 
 # ─── Resumen de mercado ─
 RESUMEN = {
@@ -80,4 +92,5 @@ RESENAS_OPCIONES_PRINCIPAL = {
     5: "Mineral: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
     6: "Piedra: precio del recurso por ciudad, verde = mayor precio, rojo = menor.",
     7: "Salsas de pescado: analisis de rentabilidad, receta, costo de insumos.",
+    8: "Buscar: escribe un termino y encuentra cualquier item del catalogo por nombre (pesca, recursos, armas, diarios...).",
 }
