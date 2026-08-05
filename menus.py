@@ -197,6 +197,23 @@ def _consola_handle():
         return None
 
 
+def _consola_nativa():
+    """Devuelve el handle SOLO si es una consola Windows REAL (GetConsoleMode
+    tiene exito). En redireccion a pipe/archivo devuelve None: ahi el ANSI
+    crudo es lo correcto, no la API nativa (que no aplica a un pipe).
+    """
+    h = _consola_handle()
+    if h is None:
+        return None
+    try:
+        mode = ctypes.c_ulong()
+        if not _kernel32.GetConsoleMode(h, ctypes.byref(mode)):
+            return None
+        return h
+    except Exception:
+        return None
+
+
 def limpiar_pantalla():
     """Limpia la consola completa (API nativa de Windows, sin ANSI).
 
@@ -222,6 +239,32 @@ def limpiar_pantalla():
     console.control(_RawControl("\x1b[2J\x1b[H"))
 
 
+def _escribir_linea_nativa(fila, texto):
+    """Escribe UNA linea del frame con la API nativa de Windows (sin ANSI).
+
+    El buffer renderiza el frame con force_terminal=True, asi que `texto`
+    trae codigos ANSI embebidos. AnsiDecoder los convierte de nuevo en Text
+    con estilos, y LegacyWindowsTerm traduce cada estilo a atributos Win32
+    (SetConsoleTextAttribute + WriteConsoleW). Asi funciona en consolas sin
+    VT (cmd clasico) donde el ANSI se mostraria crudo.
+    """
+    from rich.ansi import AnsiDecoder
+    from rich._win32_console import LegacyWindowsTerm, WindowsCoordinates
+
+    term = LegacyWindowsTerm(sys.stdout)
+    term.move_cursor_to(WindowsCoordinates(row=fila, col=0))
+    text = AnsiDecoder().decode_line(texto)
+    pos = 0
+    for span in text.spans:
+        if span.start > pos:
+            term.write_text(text.plain[pos:span.start])
+        term.write_styled(text.plain[span.start:span.end], span.style)
+        pos = span.end
+    if pos < len(text.plain):
+        term.write_text(text.plain[pos:])
+    term.erase_end_of_line()
+
+
 def _escribir_fila(fila, texto):
     """Escribe UNA linea del frame en su fila (0-based) sin tocar el resto.
 
@@ -230,11 +273,38 @@ def _escribir_fila(fila, texto):
     colores ANSI del render en buffer y borra hasta el final de la linea).
     Asi la navegacion no re-dibuja todo el frame: solo las filas que cambiaron.
     """
+    if console.legacy_windows:
+        h = _consola_nativa()
+        if h is not None:
+            try:
+                _escribir_linea_nativa(fila, texto)
+                return
+            except Exception:
+                pass
     console.control(_RawControl(f"\x1b[{fila + 1};1H{texto}\x1b[K"))
     try:
         console.file.flush()
     except Exception:
         pass
+
+
+def _escribir_frame_completo(lineas):
+    """Redibuja todo el frame tras limpiar la pantalla.
+
+    Misma logica que _escribir_fila pero para todas las filas de una vez:
+    en consola legacy Windows usa la API nativa, en el resto el ANSI crudo
+    (que el terminal si interpreta).
+    """
+    if console.legacy_windows:
+        h = _consola_nativa()
+        if h is not None:
+            try:
+                for i, linea in enumerate(lineas):
+                    _escribir_linea_nativa(i, linea)
+                return
+            except Exception:
+                pass
+    console.control(_RawControl("\n".join(lineas) + "\n"))
 
 
 def _repintar_diff(lineas, prev):
@@ -492,7 +562,7 @@ def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=No
         if primera or lineas_prev is None or len(lineas) > alto:
             # primer frame (o frame mas alto que la terminal): redibujo completo
             limpiar_pantalla()
-            console.control(_RawControl("\n".join(lineas) + "\n"))
+            _escribir_frame_completo(lineas)
             try:
                 console.file.flush()
             except Exception:
