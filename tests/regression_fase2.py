@@ -88,7 +88,7 @@ assert run_sel(["3", "4", "enter"], opts, filas=19) == 33, "3+4 -> 33"
 assert run_sel(["2", "enter"], opts, filas=19) == 1, "2 -> item 1"
 assert run_sel(["0", "enter"], opts, filas=19) == 0, "0 en submenu se ignora; enter selecciona"
 assert run_sel(["0"], opts, filas=19, es_raiz=True) is None, "0 sin etiqueta se ignora incluso en raiz"
-assert run_sel(["R"], opts, filas=19) == "R", "R -> reiniciar"
+assert run_sel(["f5"], opts, filas=19) == "f5", "f5 -> reiniciar"
 assert run_sel(["esc"], opts, filas=19) is None, "esc -> cancelar"
 assert run_sel(["q"], opts, filas=19) is None, "q -> cancelar"
 opts9 = [(f"O{i}", "") for i in range(1, 10)]
@@ -98,7 +98,8 @@ assert run_sel(["x", "enter"], opts9, filas=5) == 0, "tecla invalida ignorada"
 # numeros personalizados (raiz): solo responden los digitos VISIBLES
 opts8 = [(f"O{i}", "") for i in range(1, 9)]
 numeros_raiz = [str(i) for i in range(1, 8)] + ["R"]
-assert run_sel(["R"], opts8, filas=5, numeros=numeros_raiz) == "R", "R visible -> reiniciar"
+assert run_sel(["f5"], opts8, filas=5, numeros=numeros_raiz) == "f5", "f5 -> reiniciar (global)"
+assert run_sel(["R"], opts8, filas=5, numeros=numeros_raiz) is None, "R ya no recarga (letra ignorada)"
 assert run_sel(["1"], opts8, filas=5, numeros=numeros_raiz) == 0, "digito visible 1 -> idx 0"
 assert run_sel(["7"], opts8, filas=5, numeros=numeros_raiz) == 6, "digito visible 7 -> idx 6"
 assert run_sel(["8"], opts8, filas=5, numeros=numeros_raiz) is None, "8 sin etiqueta se ignora (no select Reiniciar)"
@@ -150,15 +151,15 @@ menus.reiniciar = lambda: (_ for _ in ()).throw(SystemExit("reiniciar"))
 menus.menu_principal({"pescados": {}})
 print("PASS E2E menu_principal secciones 1-7 + salida con confirmacion")
 
-# Esc en la raiz -> confirmacion -> Esc cancela (no sale); R recarga
-teclas = ["esc", "esc", "R"]
+# Esc en la raiz -> confirmacion -> Esc cancela (no sale); F5 recarga
+teclas = ["esc", "esc", "f5"]
 menus._leer_tecla = lambda espera=0: (teclas.pop(0) if teclas else "esc")
 try:
     menus.menu_principal({"pescados": {}})
-    raise AssertionError("debia recargar (SystemExit) tras esc-esc-R")
+    raise AssertionError("debia recargar (SystemExit) tras esc-esc-f5")
 except SystemExit as e:
     assert str(e) == "reiniciar", f"esperaba reiniciar, got {e}"
-print("PASS E2E Esc en raiz cancela la salida; R recarga")
+print("PASS E2E Esc en raiz cancela la salida; F5 recarga")
 
 # menu_insumos_pesca: 0 en el selector de salsas se IGNORA (sin crash,
 # sin volver); Esc vuelve.
@@ -185,8 +186,8 @@ def run_pausa(teclas):
 assert run_pausa(["esc"]) == "return", "esc -> volver"
 assert run_pausa(["enter"]) == "return", "enter -> volver"
 assert run_pausa(["x", "esc"]) == "return", "invalida ignorada, esc vuelve"
-assert run_pausa(["R"]) == "reiniciar", "R -> reiniciar"
-assert run_pausa(["r"]) == "reiniciar", "r minuscula -> reiniciar"
+assert run_pausa(["f5"]) == "reiniciar", "f5 -> reiniciar"
+assert run_pausa(["r", "esc"]) == "return", "r ya no recarga (letra ignorada), esc vuelve"
 print("PASS _pausa_volver 5 casos")
 
 # ── 6. _confirmar_salida: Enter confirma, Esc cancela, otra se ignora ──

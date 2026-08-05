@@ -248,7 +248,7 @@ def _leer_tecla(espera=0):
         if espera > 0 and not msvcrt.kbhit():
             return None
         ch = msvcrt.getwch()
-        if ch in ("\x00", "\xe0"):  # teclas especiales (flechas)
+        if ch in ("\x00", "\xe0"):  # teclas especiales (flechas, F1-F12)
             ch2 = msvcrt.getwch()
             if ch2 == "H":
                 return "up"
@@ -258,6 +258,8 @@ def _leer_tecla(espera=0):
                 return "left"
             elif ch2 == "M":
                 return "right"
+            elif ch2 == "?":  # F5 (scan-code de msvcrt: F1=";", F5="?", F6="@")
+                return "f5"
             else:
                 return ""
         elif ch == "\r":
@@ -356,11 +358,11 @@ def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=No
     filas None -> una sola columna. Con filas se usa grid column-major
     (item = columna * filas + fila), igual que el reparto de la lista.
     numeros: lista opcional con la etiqueta a mostrar por opcion (ej:
-    ["1","2","R"]). Por defecto numera 1..n. Solo responden los DIGITOS
+    ["1","2","F5"]). Por defecto numera 1..n. Solo responden los DIGITOS
     que se muestran como etiqueta; un digito no visible se ignora (evita
     atajos ocultos que parecen bugs). Con numeros no hay acumulacion de
     digitos multiples.
-    Devuelve int (indice 0-based), "R" (reiniciar) o None (esc/q = cancelar).
+    Devuelve int (indice 0-based), "f5" (reiniciar) o None (esc/q = cancelar).
     es_raiz=True -> el hint dice "Esc salir"; False -> "Esc volver".
     """
     n = len(opciones)
@@ -440,7 +442,7 @@ def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=No
         col_hint = "Izq/Der columna · " if ncol > 1 else ""
         esc_tecla, esc_accion = ("Esc", "salir") if es_raiz else ("Esc", "volver")
         hint = (f"  [dim]{col_hint}Arriba/Abajo mover · [yellow]Enter[/] elegir"
-                f" · [yellow]{esc_tecla}[/] {esc_accion} · [yellow]R[/] recargar")
+                f" · [yellow]{esc_tecla}[/] {esc_accion} · [yellow]F5[/] recargar")
         c.print(Panel(hint, border_style="cyan", box=box.ROUNDED, expand=True))
 
     primera = True
@@ -506,8 +508,8 @@ def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=No
         elif tecla in ("up", "down", "left", "right"):
             digitos = ""
             cursor = _mover_cursor(cursor, tecla, filas, n)
-        elif tecla.upper() == "R":
-            return "R"
+        elif tecla == "f5":
+            return "f5"
         elif tecla.isdigit():
             if atajos_digitos is not None:
                 # solo responden los digitos que se VEN como etiqueta
@@ -554,12 +556,12 @@ def reiniciar():
 
 def _pausa_volver():
     """Pantallas de detalle: espera UNA tecla sin prompt de texto.
-    Esc/Enter -> vuelve al listado; R -> recarga la app; el resto se ignora."""
+    Esc/Enter -> vuelve al listado; F5 -> recarga la app; el resto se ignora."""
     while True:
         tecla = _leer_tecla()
         if tecla in ("esc", "enter"):
             return
-        if tecla is not None and tecla.upper() == "R":
+        if tecla == "f5":
             reiniciar()
 
 
@@ -589,7 +591,7 @@ def _hint_detalle(c=None):
     """
     c = c or console
     c.print(Panel(
-        "  [dim][yellow]Esc[/] volver · [yellow]R[/] recargar[/]",
+        "  [dim][yellow]Esc[/] volver · [yellow]F5[/] recargar[/]",
         border_style="cyan",
         box=box.ROUNDED,
         expand=True,
@@ -629,7 +631,7 @@ def menu_principal(config):
         # cualquier pantalla (lo dice el hint), un item visible seria duplicar.
         idx = _menu_seleccion(opciones, titulo=panel, es_raiz=True)
 
-        if idx == "R":
+        if idx == "f5":
             reiniciar()
         elif idx is None:
             console.print("\n[bold yellow]¿Salir? [Enter] Confirmar · [Esc] Cancelar[/]")
@@ -678,7 +680,7 @@ def menu_pesca(config):
         idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(peces) + 1) // 2)
         if idx is None:
             return
-        elif idx == "R":
+        elif idx == "f5":
             reiniciar()
         else:
             nombre, item_id, trozos, tipo = peces[idx]
@@ -842,7 +844,7 @@ def ver_recurso(config, tipo):
         idx = _menu_seleccion(opciones, titulo=titulo, filas=(len(menu_items) + 1) // 2)
         if idx is None:
             return
-        elif idx == "R":
+        elif idx == "f5":
             reiniciar()
         else:
             item = menu_items[idx]
@@ -1170,7 +1172,7 @@ def menu_insumos_pesca(config):
 
         if idx is None:
             return
-        elif idx == "R":
+        elif idx == "f5":
             reiniciar()
         else:
             nombre, sid, _ = salsas[idx]
