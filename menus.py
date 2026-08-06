@@ -785,7 +785,7 @@ def menu_buscar(config):
                     color = "white"
                 etiqueta = f"{i + 1:>2}"
                 if i == cursor:
-                    fc.print(f"  [black on cyan][ {etiqueta} ] [{color}]{nombre}[/]")
+                    fc.print(f"  [black on cyan][ {etiqueta} ] {nombre}[/]")
                 else:
                     fc.print(f"  [ {etiqueta} ] [{color}]{nombre}[/]")
             fc.print()
