@@ -777,11 +777,15 @@ def menu_buscar(config):
         else:
             for i, item in enumerate(resultados):
                 nombre = item["nombre"].replace("[", "\\[").replace("]", "\\]")
+                try:
+                    _, color = info_tier(item["id_base"])
+                except Exception:
+                    color = "white"
                 etiqueta = f"{i + 1:>2}"
                 if i == cursor:
-                    fc.print(f"  [black on cyan][ {etiqueta} ] {nombre}[/]")
+                    fc.print(f"  [black on cyan][ {etiqueta} ] [{color}]{nombre}[/]")
                 else:
-                    fc.print(f"  [ {etiqueta} ] {nombre}")
+                    fc.print(f"  [ {etiqueta} ] [{color}]{nombre}[/]")
             fc.print()
             fc.print(f"  [dim]{len(resultados)} resultado(s) · ↑/↓ mover · Enter abrir[/]")
         fc.print()
@@ -872,13 +876,19 @@ def _tabla_calidades(columnas, precios, fechas):
     return tbl
 
 
+def _calidades_con_datos(precios_item):
+    """Calidades (1-5) con al menos un precio > 0 en el dict de precios."""
+    return [cal for cal in range(1, 6)
+            if any(v > 0 for v in (precios_item.get(cal) or {}).values())]
+
+
 def ver_detalle_buscado(item, config):
     """Detalle de un item del buscador: UNA llamada get_prices, sin volumen,
     sin resumen. Segun el tipo detectado por el catalogo:
-      - arma:   5 paneles apilados (base/.1/.2/.3/.4), cada uno con las 5
-                calidades por ciudad (11 columnas).
+      - arma:   5 paneles apilados (base/.1/.2/.3/.4), cada uno con las
+                calidades con datos por ciudad.
       - diario: tabla Ciudad | Vacío | Lleno (consulta {base}_EMPTY/_FULL).
-      - simple: un solo panel con las 5 calidades.
+      - simple: un solo panel con las calidades con datos.
     """
     limpiar_pantalla()
     id_base = item["id_base"]
@@ -886,13 +896,17 @@ def ver_detalle_buscado(item, config):
 
     # Color del header: el del tier si se puede extraer; si no, blanco neutro.
     try:
-        _, color = info_tier(id_base)
+        tier, color = info_tier(id_base)
     except Exception:
-        color = "white"
+        tier, color = "?", "white"
+
+    etiqueta_tipo = {"diario": "Diario", "arma": "Arma", "simple": "Item"}.get(tipo, "Item")
+    tag = f"[{color}]T{tier} {etiqueta_tipo}[/]"
+    resena = RESENAS_DETALLE["buscado_diario" if tipo == "diario" else ("buscado_arma" if tipo == "arma" else "buscado")]
 
     _panel_detalle(
         item["nombre"], color,
-        f"  [dim]{id_base}[/]\n\n  {RESENAS_DETALLE['buscado']}",
+        f"  {tag}\n\n  {resena}",
     )
 
     if tipo == "diario":
@@ -935,7 +949,8 @@ def ver_detalle_buscado(item, config):
     elif tipo == "arma":
         paneles = [("Base", id_base)] + [(f".{i}", f"{id_base}@{i}") for i in range(1, 5)]
         for etiq, iid in paneles:
-            columnas = [(iid, cal, i + 1) for i, cal in enumerate(CALIDADES)]
+            calidades = _calidades_con_datos(precios.get(iid, {})) or [1]
+            columnas = [(iid, CALIDADES[cal - 1], cal) for cal in calidades]
             console.print(Panel(
                 _tabla_calidades(columnas, precios, fechas),
                 title=f"[bold]{etiq}[/]",
@@ -946,7 +961,8 @@ def ver_detalle_buscado(item, config):
             ))
             console.print()
     else:
-        columnas = [(id_base, cal, i + 1) for i, cal in enumerate(CALIDADES)]
+        calidades = _calidades_con_datos(precios.get(id_base, {})) or [1]
+        columnas = [(id_base, CALIDADES[cal - 1], cal) for cal in calidades]
         console.print(_tabla_calidades(columnas, precios, fechas))
 
     console.print()

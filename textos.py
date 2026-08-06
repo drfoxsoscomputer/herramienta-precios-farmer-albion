@@ -45,8 +45,16 @@ RESENAS_DETALLE = {
     ),
     "buscado": (
         "Precios por ciudad y calidad. Verde = el mayor precio de esa "
+        "columna, rojo = el menor, — = sin datos."
+    ),
+    "buscado_arma": (
+        "Precios por ciudad y calidad. Verde = el mayor precio de esa "
         "columna, rojo = el menor, — = sin datos. En armas, cada "
         "encantamiento (.1 a .4) es un panel aparte."
+    ),
+    "buscado_diario": (
+        "Precios por ciudad: columnas Vacío y Lleno. Verde = el mayor "
+        "precio de esa columna, rojo = el menor, — = sin datos."
     ),
 }
 

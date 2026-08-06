@@ -21,6 +21,7 @@ FIXTURE = [
     {"UniqueName": "T4_JOURNAL_FISHERMAN", "LocalizedNames": {"ES-ES": "Diario de pescador"}},
     {"UniqueName": "T4_JOURNAL_FISHERMAN_EMPTY", "LocalizedNames": {"ES-ES": "Diario de pescador (vacío)"}},
     {"UniqueName": "T4_JOURNAL_FISHERMAN_FULL", "LocalizedNames": {"ES-ES": "Diario de pescador (parcialmente lleno)"}},
+    {"UniqueName": "T4_JOURNAL_TROPHY_FISHING", "LocalizedNames": {"ES-ES": "Diario de trofeos del pescador novato (Parcialmente lleno)"}},
     {"UniqueName": "T5_BAG", "LocalizedNames": {"EN-US": "Bag"}},
 ]
 catalogo._cat = catalogo._indexar(FIXTURE)
@@ -48,12 +49,20 @@ print("PASS tipo: _JOURNAL -> diario, con @ -> arma, resto -> simple")
 # ── 4. diarios agrupados: _EMPTY/_FULL NO aparecen, solo el journal base ──
 res = catalogo.buscar("diario")
 bases = [r["id_base"] for r in res]
-assert bases == ["T4_JOURNAL_FISHERMAN"], f"los diarios se agrupan al base, got {bases}"
+assert bases == ["T4_JOURNAL_FISHERMAN", "T4_JOURNAL_TROPHY_FISHING"], f"los diarios se agrupan al base, got {bases}"
 assert res[0]["tipo"] == "diario", res[0]
 assert res[0]["nombre"] == "Diario de pescador", res[0]["nombre"]
 # La variante _FULL con sufijo ' (parcialmente lleno)' no contamina el listado
 assert all("parcialmente lleno" not in r["nombre"] for r in res), res
 print("PASS diarios: _EMPTY/_FULL agrupados, una sola entrada (nombre sin '(parcialmente lleno)')")
+
+# ── 4b. diarios con sufijo en mayuscula: el limpiado es case-insensitive ──
+res = catalogo.buscar("trofeos")
+assert len(res) == 1, f"deberia encontrar solo el diario de trofeos, got {len(res)}"
+assert res[0]["id_base"] == "T4_JOURNAL_TROPHY_FISHING", res
+assert res[0]["nombre"] == "Diario de trofeos del pescador novato", res[0]["nombre"]
+assert all("parcialmente lleno" not in r["nombre"].lower() for r in res), res
+print("PASS diarios: ' (Parcialmente lleno)' con P mayuscula tambien se limpia")
 
 # ── 5. tokens AND contra nombre ES-ES y UniqueName normalizados ──
 res = catalogo.buscar("tiburon")  # sin tilde encuentra "Tiburón"

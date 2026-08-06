@@ -42,7 +42,7 @@ def normalizar(texto):
 def _limpiar_nombre(nombre):
     """Quita el sufijo ' (parcialmente lleno)' del final (diarios)."""
     sufijo = " (parcialmente lleno)"
-    if nombre and nombre.endswith(sufijo):
+    if nombre and nombre.lower().endswith(sufijo):
         return nombre[: -len(sufijo)]
     return nombre
 
