@@ -749,6 +749,8 @@ def menu_buscar(config):
     """
     texto = ""
     cursor = 0
+    primera = True
+    lineas_prev = None
     while True:
         resultados = catalogo.buscar(texto)
         cursor = min(cursor, max(0, len(resultados) - 1)) if resultados else 0
@@ -799,12 +801,20 @@ def menu_buscar(config):
         lineas = buf.getvalue().split("\n")
         while lineas and lineas[-1] == "":
             lineas.pop()
-        limpiar_pantalla()
-        console.control(_RawControl("\n".join(lineas) + "\n"))
-        try:
-            console.file.flush()
-        except Exception:
-            pass
+
+        if primera or lineas_prev is None or len(lineas) > alto:
+            # primer frame (o frame mas alto que la terminal): redibujo completo
+            limpiar_pantalla()
+            _escribir_frame_completo(lineas)
+            try:
+                console.file.flush()
+            except Exception:
+                pass
+            primera = False
+        else:
+            # navegacion: reescribir solo las filas que cambiaron (sin parpadeo)
+            _repintar_diff(lineas, lineas_prev)
+        lineas_prev = lineas
 
         tecla = _leer_tecla()
         if tecla is None:
@@ -818,6 +828,7 @@ def menu_buscar(config):
         elif tecla == "enter":
             if resultados:
                 ver_detalle_buscado(resultados[cursor], config)
+                primera = True  # el detalle tapo la pantalla: redibujar completo
         elif tecla in ("up", "down") and resultados:
             if tecla == "up":
                 cursor = (cursor - 1) % len(resultados)
