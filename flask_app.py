@@ -14,6 +14,7 @@ import io
 import json
 import os
 import socket
+import sys
 from urllib.parse import quote
 
 from flask import Flask, abort, render_template, request, send_file
@@ -27,13 +28,36 @@ from textos import (CALIDADES, PARES_RECURSO, RESENAS_DETALLE, RESENAS_MENU,
                     RESENAS_OPCIONES_PRINCIPAL)
 import catalogo
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# En PyInstaller (exe portable) los datos viven junto al exe; en desarrollo,
+# junto a este archivo. sys.frozen True solo cuando corre empaquetado.
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 CONFIG_FILE = os.path.join(BASE_DIR, "albion_config.json")
 
 HOST = "0.0.0.0"
 PORT = 8081
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
+)
+
+
+# ─── PWA ───────────────────────────────────────────────────────
+@app.get("/manifest.json")
+def pwa_manifest():
+    return send_file(os.path.join(BASE_DIR, "static", "manifest.json"),
+                     mimetype="application/manifest+json")
+
+
+@app.get("/sw.js")
+def pwa_sw():
+    return send_file(os.path.join(BASE_DIR, "static", "sw.js"),
+                     mimetype="application/javascript")
 
 
 # ─── Config ────────────────────────────────────────────────────

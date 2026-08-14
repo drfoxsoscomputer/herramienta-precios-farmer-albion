@@ -11,6 +11,7 @@
 import json
 import os
 import ssl
+import sys
 import unicodedata
 import urllib.request
 
@@ -48,8 +49,13 @@ def _limpiar_nombre(nombre):
 
 
 def _ruta_catalogo():
-    """catalog.json vive junto a la app (la carpeta de este archivo)."""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), ARCHIVO_CATALOGO)
+    """catalog.json vive junto a la app (junto al exe en portable, junto a
+    este archivo en desarrollo)."""
+    if getattr(sys, "frozen", False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, ARCHIVO_CATALOGO)
 
 
 def _aviso_descarga(error):

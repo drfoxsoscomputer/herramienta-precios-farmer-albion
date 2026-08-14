@@ -4,8 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}Albion Helper{% endblock %} · Albion Helper</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="https://render.albiononline.com/v1/item/T4_BAG_SATCHEL_LV1.png">
+<meta name="theme-color" content="#141419">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
 <script>
 tailwind.config = {
   darkMode: 'class',

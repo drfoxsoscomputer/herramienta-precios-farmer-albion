@@ -10,11 +10,16 @@ mercado de la API albion-online-data.com y recomienda donde vender
 
 ## Como correr
 ```
-python albion_helper.py
+python albion_helper.py          # consola
+python -X utf8 flask_app.py      # web (8081)
+python -X utf8 lanzador.py       # lanzador GUI (recomendado)
+python -X utf8 build.py          # empaquetado portable (PyInstaller onedir)
 ```
 Windows. Ya NO requiere consola compatible con VT: desde el fix del 2026-08-05
 el render por filas usa la API nativa Win32 en consolas legacy (conhost sin
 VT); con Windows Terminal / cmd moderno sigue usando ANSI (truecolor).
+Distribución portable: `dist/AlbionHelper-portable-v1.0.0.zip` (53.8 MB, sin
+instalar nada — Python incluido). El lanzador se minimiza a la bandeja.
 
 ## Repo GitHub (publico)
 - https://github.com/drfoxsoscomputer/herramienta-precios-farmer-albion
@@ -30,6 +35,9 @@ VT); con Windows Terminal / cmd moderno sigue usando ANSI (truecolor).
 - `catalogo.py` — buscador global: descarga items.json -> catalog.json (una vez, junto a la app) y busca por nombre ES-ES + UniqueName normalizados (tokens AND, dedupe @1..@4, tipos diario/arma/simple)
 - `textos.py` — reseñas de ayuda (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, CALIDADES)
 - `albion_config.json` — datos: pescados (38), recursos (fibra/madera/cuero/mineral/piedra), salsas con recetas
+- `lanzador.py` — lanzador desktop (tkinter+pystray): controla web/túnel/consola/actualizaciones, bandeja, wizard primer arranque
+- `build.py` — empaquetado portable (PyInstaller onedir, 2 exes + datos)
+- `static/` — manifest.json + sw.js (PWA)
 - `openspec/config.yaml` — config SDD (contexto, strict_tdd: false, comando de tests, reglas por fase)
 - `openspec/specs/` + `openspec/changes/archive/` — estructura SDD (fuente de verdad, versionada en git)
 - `ESTADO.md` — este archivo (memoria viva del proyecto)
@@ -87,6 +95,7 @@ VT); con Windows Terminal / cmd moderno sigue usando ANSI (truecolor).
 - **REGLAS SESION (2026-08-13, usuario)**: (1) NUNCA matar el server del usuario en puerto 8080 ni arrancar el propio en ese puerto — para smoke tests usar puerto 8081 (`_smoke_webui.py` temporal con set_config + ui.run(port=8081) y borrarlo). (2) El modelo de opencode para modos plan/build cambió a `opencode/deepseek-v4-flash-free` (config global ~/.config/opencode/opencode.json). (3) La web está funcionando de nuevo y el usuario la usa; "lo único que sirve es lo de pesca" (recursos recién implementados, salsas/buscar pendientes).
 - **WEB FLASK COMPLETA + BUSCADOR (2026-08-14)**: la web nueva (Flask+HTMX+Tailwind en 8081) ya cubre todas las secciones: dashboard 3 tarjetas (Pesca/Recursos/Salsas, buscar vive en el header), pesca, recursos, salsas y buscador global (`/buscar` con HTMX en vivo, detalle por tipo: arma 5 paneles, diario Vacío/Lleno, simple 5 calidades; `/buscar/tabla`, `/buscar/item/<id_base>`). Config con 2 QRs (local + túnel Cloudflare). GOTCHA procesos: los procesos hijos que lanzo con mis comandos MUEREN al terminar mi sesión (el PowerShell se cierra y mata a sus hijos); para que el server sobreviva hay que lanzarlo DESACOPLADO vía WMI (`Invoke-CimMethod Win32_Process Create`) — así Flask queda vivo como proceso independiente (PID propio, responde 200 tras mi sesión). cloudflared (túnel) se lanza igual y la URL cambia en cada reinicio (guardar en tun_url.txt). Túnel actual: `https://shoes-disco-voluntary-transcription.trycloudflare.com`.
 - **LIMPIADO NICEGUI + PLAN LANZADOR (2026-08-14, Fase 1 de empaquetado)**: borrado todo lo de NiceGUI (app.py, webui.py, estilo.py, paquete web/) porque la web oficial es Flask. Creados requirements.txt (Flask, qrcode, Pillow, requests, rich, pystray) y version.txt (1.0.0). Smoke 6/6 rutas OK. PLAN APROBADO por el usuario: (F1) limpieza + commit; (F2) lanzador `lanzador.py` tkinter+pystray con estado del server, iniciar/detener web, abrir navegador, QR, Cloudflare on/off, consola, buscar actualizaciones, minimizar a bandeja; wizard primer arranque (carpeta + acceso directo escritorio/Inicio/ambos/ninguno + ¿navegador o instalar PWA?); (F3) PWA (manifest+sw.js); (F4) botón buscar actualizaciones vs GitHub releases + version.txt; (F5) PyInstaller onedir portable (Python incluido, "Docker sin serlo") + zip + prueba pendrive; (F6) ESTADO/README, commit+push, release v1.0.0. Todo portable, el usuario final NO instala nada.
+- **LANZADOR + PWA + ACTUALIZACIONES + PORTABLE COMPLETADOS (2026-08-14, Fases 2-5)**: (F2) `lanzador.py` (tkinter+pystray): estado server verde/rojo, iniciar/detener web, abrir navegador (o PWA), QR, Cloudflare on/off (captura URL desde tun.log), consola (exe aparte), buscar actualizaciones (GitHub releases vs version.txt), minimizar a bandeja. Wizard primer arranque (carpeta + acceso directo vía wscript.exe VBS — cscript NO existe en esta PC + navegador/PWA). GOTCHA: procesos hijos del lanzador mueren si el lanzador se cierra (por diseño: el lanzador los posee). (F3) PWA: `static/manifest.json` + `static/sw.js` + rutas /manifest.json y /sw.js + registro en base.html. (F4) `buscar_actualizaciones()` valida releases de GitHub, descarga zip a actualizaciones/. (F5) `build.py` genera con PyInstaller onedir: `dist/AlbionHelper/AlbionHelper.exe` (GUI + `--server`), `AlbionHelperConsole.exe` (consola), datos editables junto al exe (templates, static, albion_config.json, catalog.json, version.txt, cloudflared.exe). VERIFICADO: exe --server 6/6 rutas + buscador lee catalog.json junto al exe; consola exe arranca; GUI exe abre/cierra; ZIP portable (53.8 MB) descomprimido en carpeta limpia (simula pendrive) responde 200. Claves frozen-aware: BASE_DIR = dirname(sys.executable) en flask_app/catalogo/albion_helper cuando sys.frozen.
 
 ## Pendientes / ToDo
 - [ ] CAMBIO SDD v2 (acordado con el usuario, preflight: interactive/both/force-chained/400):
@@ -110,7 +119,8 @@ VT); con Windows Terminal / cmd moderno sigue usando ANSI (truecolor).
 - [ ] `logo_test.jpg` sin trackear (decisión del usuario: commit o borrar)
 - [x] Repo creado en GitHub publico (2026-08-01): herramienta-precios-farmer-albion
 - [x] Skills de marketing instalados (copywriting + product-marketing desde coreyhaines31/marketingskills) — registro actualizado
-- [ ] PLAN LANZADOR/EMPAQUETADO (2026-08-14, aprobado): F1 limpieza NiceGUI ✓ (commit pendiente) -> F2 lanzador tkinter+pystray -> F3 PWA -> F4 actualizaciones GitHub -> F5 PyInstaller onedir portable -> F6 commit+push+release v1.0.0+CodeGraph
+- [ ] PLAN LANZADOR/EMPAQUETADO (2026-08-14, aprobado): F1 limpieza NiceGUI ✓ -> F2 lanzador tkinter+pystray ✓ -> F3 PWA ✓ -> F4 actualizaciones GitHub ✓ -> F5 PyInstaller onedir portable ✓ -> F6 commit+push+release v1.0.0+CodeGraph (en curso)
+- [ ] Probar el ZIP portable en otra PC (usuario) y el flujo de PWA desde el túnel (HTTPS)
 
 ## Decisiones recientes
 - FIX RENDER: opción 2 (sin dependencia de ANSI) elegida por el usuario — el render por filas usa la API nativa Win32 (LegacyWindowsTerm + AnsiDecoder) SOLO cuando console.legacy_windows AND la consola es real (GetConsoleMode OK); con VT/Unix/pipe -> ANSI actual. Causa raíz: commit 4b9973f (31 Jul) introdujo ANSI crudo con _RawControl; Rich nunca habilita VT. Se descartó forzar SetConsoleMode(ENABLE_VIRTUAL_TERMINAL_PROCESSING) porque seguiría dependiendo de ANSI (2026-08-05)

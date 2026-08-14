@@ -27,7 +27,11 @@ except Exception:
     pass
 
 # ─── Config ───────────────────────────────────────────────────
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "albion_config.json")
+if getattr(sys, "frozen", False):
+    _BASE = os.path.dirname(sys.executable)
+else:
+    _BASE = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(_BASE, "albion_config.json")
 
 console = Console()
 
@@ -42,6 +46,10 @@ def load_config():
 
 
 # ─── Entry ────────────────────────────────────────────────────
-if __name__ == "__main__":
+def main():
     config = load_config()
     menu_principal(config)
+
+
+if __name__ == "__main__":
+    main()

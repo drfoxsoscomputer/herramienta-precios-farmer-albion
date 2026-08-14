@@ -8,7 +8,15 @@ Consultar precios y datos del mercado de Albion Online desde tu PC o tu celular 
 
 ## 🚀 ¿Cómo correr?
 
-### Web (recomendada)
+### Lanzador (recomendado)
+
+```bash
+python -X utf8 lanzador.py
+```
+
+Ventana que controla todo: iniciar/detener el servidor web, abrir el navegador (o instalar como app PWA), ver el QR para el celular, activar/desactivar el túnel Cloudflare, ejecutar la consola y buscar actualizaciones. Se minimiza a la bandeja del sistema (junto al reloj).
+
+### Web
 
 ```bash
 python -X utf8 flask_app.py
@@ -63,7 +71,10 @@ URL local + internet con sus QR para abrir la web en el celular o compartirla.
 ## 📦 Arquitectura del proyecto
 
 - `flask_app.py` — Web oficial (Flask + HTMX + Tailwind), puerto 8081
+- `lanzador.py` — Lanzador desktop (tkinter + pystray): controla web/túnel/consola/actualizaciones y se minimiza a la bandeja
+- `build.py` — Empaquetado portable con PyInstaller (genera los 2 exes + datos)
 - `templates/` — Plantillas Jinja de todas las páginas
+- `static/` — PWA: manifest.json + sw.js
 - `albion_helper.py` — Entry point de la consola (Rich)
 - `menus.py` — UI de la consola: menús, detalles, buscador
 - `api.py` — `get_prices` / `get_history_raw` con cache 60s y backoff ante 429
@@ -75,7 +86,19 @@ URL local + internet con sus QR para abrir la web en el celular o compartirla.
 - `requirements.txt` — Dependencias
 - `version.txt` — Versión actual (para actualizaciones)
 
-## 🛠️ Instalación
+## 📦 Distribución portable
+
+¿Querés usarla en otra PC sin instalar nada (ni Python ni plugins)? Descomprimí el zip portable `dist/AlbionHelper-portable-v1.0.0.zip` en cualquier carpeta (incluso un pendrive) y ejecutá `AlbionHelper.exe`. Todo queda adentro: Python, librerías, datos y el túnel Cloudflare.
+
+El primer arranque pregunta dónde guardar el programa, si crear acceso directo (escritorio / menú Inicio) y si abrir en navegador o instalar como app (PWA).
+
+Para regenerar el paquete:
+
+```bash
+python -X utf8 build.py
+```
+
+## 🛠️ Instalación (desarrollo)
 
 ```bash
 pip install -r requirements.txt
