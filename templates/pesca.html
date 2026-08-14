@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Pesca{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/" class="text-zinc-400 hover:text-white transition-colors">← Volver a Inicio</a>
+</div>
+
+<h1 class="text-3xl font-bold" style="color:#e6c45c">Pesca</h1>
+<p class="text-zinc-500 mt-2 mb-6">{{ resena }}</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+  {% for p in peces %}
+  <a href="/pesca/{{ p.nombre | urlencode }}"
+     class="bg-panel border border-borde rounded-xl p-4 flex items-center gap-3 card-hover">
+    <img src="{{ p.icono }}" alt="{{ p.nombre }}" class="w-10 h-10 object-contain"
+         onerror="this.style.display='none'">
+    <div class="min-w-0 flex-1">
+      <div class="font-semibold truncate" style="color:{{ p.color }}">{{ p.nombre }}</div>
+      <div class="text-xs text-zinc-500">{{ p.trozos }} trozos · {{ p.tipo }}</div>
+    </div>
+    <span class="text-xs font-bold px-2 py-1 rounded-full border shrink-0"
+          style="color:{{ p.color }}; border-color:{{ p.color }}">T{{ p.tier }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+{% endblock %}

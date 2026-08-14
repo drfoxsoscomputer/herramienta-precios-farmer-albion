@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titulo %}Configuracion{% endblock %}
+{% block contenido %}
+
+<h1 class="text-3xl font-bold" style="color:#e6c45c">Configuracion</h1>
+<p class="text-zinc-500 mt-2 mb-6">
+  Abri Albion Helper desde cualquier dispositivo escaneando un QR.
+</p>
+
+{% set url_local = "http://" ~ ip_lan ~ ":" ~ port ~ "/" %}
+{% set url_publica = tunel_url or "" %}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+  <div class="bg-panel border border-borde rounded-xl p-6 text-center">
+    <div class="text-sm text-zinc-400 mb-1">RED LOCAL (misma red WiFi)</div>
+    <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all"
+         style="color:#e6c45c">{{ url_local }}</div>
+    <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
+         class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
+         onerror="this.style.display='none'">
+    <div class="text-xs text-zinc-500 mt-3">
+      Solo funciona en dispositivos conectados al <b>mismo router</b> que esta PC.
+    </div>
+  </div>
+
+  <div class="bg-panel border border-borde rounded-xl p-6 text-center">
+    <div class="text-sm text-zinc-400 mb-1">INTERNET (desde cualquier red)</div>
+    {% if url_publica %}
+    <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
+         style="color:#e6c45c">{{ url_publica }}</div>
+    <img src="/qr?url={{ url_publica | urlencode }}" alt="QR internet"
+         class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
+         onerror="this.style.display='none'">
+    <div class="text-xs text-zinc-500 mt-3">
+      Funciona desde <b>cualquier red con internet</b> (WiFi ONU, datos moviles, etc.).
+      La URL cambia al reiniciar el server.
+    </div>
+    {% else %}
+    <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4">No hay tunel activo</div>
+    <div class="text-xs text-zinc-500 mt-3">
+      Para abrir desde internet: ejecuta <code>cloudflared tunnel --url http://localhost:{{ port }}</code>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<div class="max-w-2xl mx-auto mt-4 bg-panel border border-borde rounded-xl p-4 text-sm text-zinc-400">
+  <div class="font-bold text-white mb-2">Notas</div>
+  <ul class="list-disc list-inside space-y-1">
+    <li><b class="text-white">QR local</b>: PC y celular en el mismo router/cable. Rapido y sin internet.</li>
+    <li><b class="text-white">QR internet</b>: sirve para el celular en la red ONU u otras redes. Depende del tunel corriendo.</li>
+    <li>Los precios se actualizan solos (la pagina se refresca cada 30 s).</li>
+  </ul>
+</div>
+
+{% endblock %}

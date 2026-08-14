@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Buscar{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/" class="text-zinc-400 hover:text-white transition-colors">← Volver a Inicio</a>
+</div>
+
+<h1 class="text-3xl font-bold" style="color:#e6c45c">Buscar</h1>
+<p class="text-zinc-500 mt-2 mb-6">{{ resena }}</p>
+
+<div class="max-w-2xl mx-auto">
+  <div class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+    <input type="text" name="q" value="{{ q }}" autofocus autocomplete="off"
+           placeholder="Escribe para buscar... (sin acentos)"
+           hx-get="/buscar/tabla"
+           hx-trigger="input changed delay:300ms"
+           hx-target="#resultados"
+           hx-swap="innerHTML"
+           hx-push-url="true"
+           class="w-full bg-panel border border-borde rounded-xl pl-10 pr-4 py-3 text-white
+                  placeholder-zinc-500 focus:outline-none focus:border-oro">
+  </div>
+
+  <div id="resultados" class="mt-4">
+    {% if q %}{% include "_buscar_resultados.html" %}{% endif %}
+  </div>
+</div>
+
+{% endblock %}

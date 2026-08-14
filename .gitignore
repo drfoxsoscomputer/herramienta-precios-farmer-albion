@@ -8,3 +8,9 @@ venv/
 .atl/
 .codegraph/
 catalog.json
+tun_url.txt
+*.bat.bak
+build/
+dist/
+*.spec
+__pycache__/

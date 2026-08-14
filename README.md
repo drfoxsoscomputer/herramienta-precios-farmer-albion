@@ -1,51 +1,89 @@
-# La Herramienta de Precios del Farmer en Albion
+# Albion Helper
 
-Herramienta CLI (Python + Rich) para consultar precios de mercado de Albion Online. Dirigida a **pescadores, refinadores, transportistas y farmers** que juegan en zona segura y quieren decidir dónde vender con datos, no con intuición.
+Herramienta de consultas de mercado para Albion Online: web local + consola, para consultar precios mientras jugás.
 
-> Proyecto no oficial de fans. No está afiliado, respaldado ni patrocinado por Sandbox Interactive GmbH. "Albion Online" es una marca registrada de Sandbox Interactive GmbH. Los datos de precios provienen de la API pública albion-online-data.com.
+## 🎯 ¿Para qué sirve?
 
-## Qué hace
+Consultar precios y datos del mercado de Albion Online desde tu PC o tu celular (red local o internet vía túnel), sin instalar nada. Filosofía del proyecto: **solo datos, sin recomendaciones de ganancia**.
 
-- Consulta precios de venta de pescados, recursos e insumos en las ciudades del juego.
-- Muestra precios mínimos/máximos, volumen y día de mayor venta (resumen informativo).
-- Indica si un item es ingrediente de receta (ej. salsas).
-- Buscador global que ignora tildes y mayúsculas.
-- Selección de servidor: América (west), Europa (east), Asia (asia).
+## 🚀 ¿Cómo correr?
 
-La herramienta **no recomienda qué vender**: te da los datos objetivos y vos decidís. Pensada para el farmer que lleva la cuenta de su plata.
+### Web (recomendada)
 
-## Cómo correr
+```bash
+python -X utf8 flask_app.py
+```
 
-```powershell
+El servidor se inicia en el puerto **8081**:
+
+- `http://localhost:8081` — tu PC
+- `http://192.168.0.111:8081` — tu IP en la red local (para el celular en la misma red)
+- `http://127.0.0.1:8081` — conexión local
+
+Para verlo desde el celular: abrí la página de Config en la web, escaneá el QR local con la cámara, o ingresá la URL de la IP.
+
+### Consola (original)
+
+```bash
 python -X utf8 albion_helper.py
 ```
 
-Se requiere Python 3.8+ y `rich`. En Windows la consola usa la API nativa (funciona en cmd.exe legacy).
+Controlada con flechas del teclado. Mismo motor de datos que la web.
 
-## Tests
+## 📱 Acceso desde internet (túnel)
 
-```powershell
-python -X utf8 tests/regression_fase2.py
-python -X utf8 tests/test_api_cache.py
+Si el celular no está en la misma red (ej. estás en la red del ONU y la PC en el router), la IP local no llega. Solución: túnel Cloudflare (gratis, sin cuenta).
+
+```bash
+cloudflared.exe tunnel --url http://localhost:8081 --no-autoupdate
 ```
 
-## Estructura
+La URL `*.trycloudflare.com` que aparece es la dirección pública; el QR de internet en la página de Config la muestra. **La URL cambia en cada reinicio** del túnel.
 
-| Archivo | Rol |
-|---------|-----|
-| `albion_helper.py` | Punto de entrada |
-| `menus.py` | Navegación e interfaz de consola |
-| `formatting.py` | Formato, normalización de texto y resumen de mercado |
-| `api.py` | Acceso a la API con cache y reintentos |
-| `constants.py` | Constantes, tiers y servidores |
-| `textos.py` | Textos de la interfaz y mapeo de búsqueda |
-| `albion_config.json` | Catálogo de items (pescados, recursos, insumos) |
-| `tests/` | Baterías de tests |
+## 📋 Secciones
 
-## Desarrollo con SDD
+### Inicio
+Dashboard con 3 tarjetas: Pesca, Recursos y Salsas. El buscador vive en el header (siempre visible).
 
-Este proyecto usa Spec-Driven Development. Los cambios se planifican en `openspec/` (propuestas, specs, diseño, tareas) antes de implementarse.
+### Pesca
+Lista de peces con su tier (color) y detalle con precios por ciudad, volumen 7 días y resumen de mercado.
 
-## Licencia
+### Recursos
+Listado por tier, crudo vs refinado, encantamientos `.1-.4` desde T4.
 
-MIT — uso educativo y personal. Sin garantías; los precios son datos de mercado del juego y pueden variar.
+### Salsas
+Precios de las 5 salsas, recetas (ingredientes y cantidades), volumen semanal.
+
+### Buscar
+Búsqueda global sobre el catálogo local (ignora acentos, tokens AND). Resultados en vivo mientras escribís; detalle por tipo: arma (5 paneles por encantamiento), diario (vacío/lleno), simple (5 calidades).
+
+### Config
+URL local + internet con sus QR para abrir la web en el celular o compartirla.
+
+## 📦 Arquitectura del proyecto
+
+- `flask_app.py` — Web oficial (Flask + HTMX + Tailwind), puerto 8081
+- `templates/` — Plantillas Jinja de todas las páginas
+- `albion_helper.py` — Entry point de la consola (Rich)
+- `menus.py` — UI de la consola: menús, detalles, buscador
+- `api.py` — `get_prices` / `get_history_raw` con cache 60s y backoff ante 429
+- `formatting.py` — Formato de precios, historial, resumen de mercado
+- `catalogo.py` + `catalog.json` — Catálogo local para el buscador global (23 MB, regenerable)
+- `colores_web.py` — Adaptador de colores Rich → CSS
+- `constants.py`, `textos.py`, `utilidades.py` — Constantes, copy en español, helpers compartidos
+- `albion_config.json` — Datos: pescados, recursos, salsas con recetas
+- `requirements.txt` — Dependencias
+- `version.txt` — Versión actual (para actualizaciones)
+
+## 🛠️ Instalación
+
+```bash
+pip install -r requirements.txt
+```
+
+## 🛡️ Licencias y créditos
+
+- Datos del juego: **Albion Online** de Sandbox Interactive (proyecto no oficial de fans)
+- Datos de mercado: API pública del juego (`albion-online-data.com`)
+- Interfaz web: Flask + Tailwind (CDN) + HTMX
+- Consola: Rich

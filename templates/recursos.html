@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}{{ par }}{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/" class="text-zinc-400 hover:text-white transition-colors">← Volver a Inicio</a>
+</div>
+
+<h1 class="text-3xl font-bold" style="color:#e6c45c">{{ par }}</h1>
+<p class="text-zinc-500 mt-2 mb-6">{{ resena }}</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+  {% for item in menu_items %}
+  <a href="/recursos/{{ tipo }}/{{ item.tier_key }}/{{ item.modo }}"
+     class="bg-panel border border-borde rounded-xl p-4 flex items-center gap-3 card-hover">
+    <div class="min-w-0 flex-1">
+      <div class="font-semibold truncate" style="color:{{ item.color }}">{{ item.label }}</div>
+    </div>
+    <span class="text-xs font-bold px-2 py-1 rounded-full border shrink-0"
+          style="color:{{ item.color }}; border-color:{{ item.color }}">{{ item.tier_key }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+{% endblock %}

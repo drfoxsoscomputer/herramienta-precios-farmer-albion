@@ -1,0 +1,49 @@
+{# Panel Volumen 7 dias (tabla estructurada). Uso:
+   {% include "_volumen_panel.html" %}  — espera la variable `volumen`
+   que es una lista de secciones: {label, unidad, filas, total}. #}
+
+{% for seccion in volumen %}
+<div class="bg-panel border border-borde rounded-xl overflow-x-auto mt-4">
+  <div class="flex items-center gap-2 px-4 py-3 border-b border-borde">
+    <span>📊</span>
+    <h2 class="font-bold" style="color:#e6c45c">Volumen 7 dias · {{ seccion.label }}</h2>
+  </div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-zinc-400 border-b border-borde">
+        <th class="px-4 py-2.5">Ciudad</th>
+        <th class="px-4 py-2.5 text-right">Volumen</th>
+        <th class="px-4 py-2.5 text-right">Promedio</th>
+        <th class="px-4 py-2.5 text-right hidden sm:table-cell">Rango</th>
+        <th class="px-4 py-2.5 text-right">Cambio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in seccion.filas %}
+      <tr class="border-b border-borde/50">
+        <td class="px-4 py-2">{{ f.ciudad }}</td>
+        <td class="px-4 py-2 text-right">{{ "{:,}".format(f.volumen) }}</td>
+        <td class="px-4 py-2 text-right">${{ "{:,}".format(f.promedio) }}</td>
+        <td class="px-4 py-2 text-right text-zinc-500 hidden sm:table-cell">
+          ${{ "{:,}".format(f.rango_min) }} – ${{ "{:,}".format(f.rango_max) }}
+        </td>
+        <td class="px-4 py-2 text-right font-semibold">
+          {% if f.cambio_pct is none %}—{% else %}
+          <span style="color:{{ '#2ecc71' if f.cambio_pct >= 0 else '#e74c3c' }}">
+            {{ '+' if f.cambio_pct >= 0 }}{{ "%.1f"|format(f.cambio_pct) }}%
+          </span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      <tr class="bg-white/5">
+        <td class="px-4 py-2 font-bold">Total</td>
+        <td class="px-4 py-2 text-right font-bold">{{ "{:,}".format(seccion.total.volumen) }}</td>
+        <td class="px-4 py-2 text-right font-bold">${{ "{:,}".format(seccion.total.promedio) }}</td>
+        <td class="px-4 py-2 hidden sm:table-cell"></td>
+        <td class="px-4 py-2"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endfor %}

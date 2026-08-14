@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}{{ nombre }}{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/salsas" class="text-zinc-400 hover:text-white transition-colors">← Volver a salsas</a>
+</div>
+
+<div class="flex items-center gap-3">
+  <img src="{{ icono }}" alt="{{ nombre }}" class="w-12 h-12 object-contain"
+       onerror="this.style.display='none'">
+  <div>
+    <h1 class="text-3xl font-bold" style="color:{{ color }}">{{ nombre }}</h1>
+    <p class="text-zinc-400 text-sm">Nivel {{ nivel }}</p>
+  </div>
+</div>
+<p class="text-zinc-500 text-sm mt-2 mb-6">{{ resena }}</p>
+
+<!-- Fragmento HTMX: carga la tabla y se refresca sola cada 30 s -->
+<div id="tabla-salsa"
+     hx-get="/salsas/{{ nombre | urlencode }}/tabla"
+     hx-trigger="load, every 30s"
+     hx-swap="innerHTML">
+  <div class="flex items-center gap-2 text-zinc-400 py-8 justify-center">
+    <span class="animate-spin inline-block w-5 h-5 border-2 border-zinc-500 border-t-transparent rounded-full"></span>
+    Consultando mercado...
+  </div>
+</div>
+
+{% endblock %}

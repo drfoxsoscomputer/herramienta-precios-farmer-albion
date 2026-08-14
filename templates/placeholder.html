@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/" class="text-zinc-400 hover:text-white transition-colors">← Inicio</a>
+</div>
+<h1 class="text-3xl font-bold" style="color:#e6c45c">{{ titulo }}</h1>
+<p class="text-zinc-500 mt-2 mb-6">{{ resena }}</p>
+
+<div class="bg-panel border border-borde rounded-xl p-8 text-center">
+  <div class="text-5xl mb-4">🚧</div>
+  <p class="text-zinc-400 font-semibold">Proximamente (Fase 2)</p>
+  <p class="text-zinc-600 text-sm mt-2">Esta seccion todavia no esta implementada en la web.</p>
+</div>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{# Fragmento HTMX con los resultados de la busqueda. #}
+
+{% if not q %}
+<div class="text-zinc-500 text-center py-8">Escribe un termino para buscar...</div>
+
+{% elif not items %}
+<div class="bg-panel border border-borde rounded-xl p-6 text-center text-zinc-500">
+  Sin resultados para tu consulta.
+</div>
+
+{% else %}
+<div class="text-sm text-zinc-500 mb-2">{{ items|length }} resultado(s)</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  {% for i in items %}
+  <a href="/buscar/item/{{ i.id_base | urlencode }}"
+     class="bg-panel border border-borde rounded-xl p-3 flex items-center gap-3 card-hover">
+    <img src="{{ i.icono }}" alt="{{ i.nombre }}" class="w-9 h-9 object-contain"
+         onerror="this.style.display='none'">
+    <div class="min-w-0 flex-1">
+      <div class="font-semibold truncate" style="color:{{ i.color }}">{{ i.nombre }}</div>
+      <div class="text-xs text-zinc-500 truncate font-mono">{{ i.id_base }}</div>
+    </div>
+    <span class="text-xs font-bold px-2 py-1 rounded-full border shrink-0"
+          style="color:{{ i.color }}; border-color:{{ i.color }}">
+      T{{ i.tier }} {{ 'Arma' if i.tipo == 'arma' else ('Diario' if i.tipo == 'diario' else 'Item') }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}

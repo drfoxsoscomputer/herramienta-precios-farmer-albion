@@ -1,0 +1,55 @@
+{# Fragmento HTMX de la tabla de precios de un pez.
+   Se incluye en pesca_detalle.html y se refresca solo via hx-trigger. #}
+
+<div class="bg-panel border border-borde rounded-xl overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-zinc-400 border-b border-borde">
+        <th class="px-4 py-3">Ciudad</th>
+        <th class="px-4 py-3 text-right">Entero</th>
+        <th class="px-4 py-3 text-right text-zinc-600">Actualizado</th>
+        <th class="px-4 py-3 text-right">Picado</th>
+        <th class="px-4 py-3 text-right text-zinc-600">Actualizado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in datos.filas %}
+      <tr class="border-b border-borde/50">
+        <td class="px-4 py-2.5">{{ f.ciudad }}</td>
+        <td class="px-4 py-2.5 text-right font-semibold"
+            {% if f.entero_color %}style="color:{{ f.entero_color }}"{% endif %}>{{ f.entero_txt }}</td>
+        <td class="px-4 py-2.5 text-right text-zinc-600">{{ f.fresca_entero }}</td>
+        <td class="px-4 py-2.5 text-right font-semibold"
+            {% if f.picado_color %}style="color:{{ f.picado_color }}"{% endif %}>{{ f.picado_txt }}</td>
+        <td class="px-4 py-2.5 text-right text-zinc-600">{{ f.fresca_picado }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if datos.volumen %}
+{% set volumen = datos.volumen %}
+{% include "_volumen_panel.html" %}
+{% endif %}
+
+<div class="bg-panel border border-borde rounded-xl p-4 mt-4">
+  <div class="flex items-center gap-2 mb-3">
+    <span>📈</span>
+    <h2 class="font-bold" style="color:#e6c45c">Resumen de mercado</h2>
+  </div>
+  {% set r = datos.resumen %}
+  {% if r.sin_datos %}
+  <div class="text-zinc-500">Sin datos de venta</div>
+  {% else %}
+  <div class="font-semibold" style="color:#2ecc71">
+    Venta min: ${{ "{:,}".format(r.min_venta) }}{% if r.min_ciudad %} ({{ r.min_ciudad }}){% endif %}
+  </div>
+  <div class="font-semibold mt-1" style="color:#e74c3c">
+    Venta max: ${{ "{:,}".format(r.max_venta) }}{% if r.max_ciudad %} ({{ r.max_ciudad }}){% endif %}
+  </div>
+  {% endif %}
+  {% if datos.uso %}
+  <div class="text-zinc-500 text-sm mt-2">Se usa en: {{ datos.uso }}</div>
+  {% endif %}
+</div>

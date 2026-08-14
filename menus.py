@@ -27,37 +27,9 @@ from formatting import (format_price, _formatear_historial, color_precio, color_
 from textos import (RESENAS_MENU, RESENAS_DETALLE, LEYENDA_TIERS, RESENAS_OPCIONES_PRINCIPAL,
                     RESUMEN, PARES_RECURSO, CALIDADES)
 import catalogo
+from utilidades import info_tier, _volumen_por_ciudad, _fecha_fresca
 
 console = Console()
-
-
-def _volumen_por_ciudad(hist):
-    """{ciudad: volumen} del historial 7d (para desempatar min/max en
-    market_summary). `hist` es la lista CRUDA de get_history_raw: entries
-    con data[] de {timestamp, item_count, avg_price} por ciudad."""
-    if not hist:
-        return {}
-    result = {}
-    for entry in hist:
-        city = entry.get("location")
-        vol = sum(p.get("item_count", 0) for p in (entry.get("data") or []))
-        if vol > 0:
-            result[city] = vol
-    return result
-
-
-def _fecha_fresca(fechas, items, ciudad):
-    """Timestamp ISO mas reciente entre `items` para `ciudad`.
-
-    fechas: {item_id: {ciudad: [timestamps...]}} con los sell_price_min_date
-    y sell_price_max_date de la API (los arma el mapeo de cada detalle).
-    Devuelve None si ningun item tiene timestamp para esa ciudad (fila sin
-    datos -> la columna "Actualizado" muestra un guion).
-    """
-    candidatos = []
-    for item in items:
-        candidatos.extend(fechas.get(item, {}).get(ciudad, []))
-    return max(candidatos) if candidatos else None
 
 
 def _resena(texto, dim=True, c=None):
@@ -616,11 +588,6 @@ def _menu_seleccion(opciones, titulo="", titulo_abajo="", filas=None, numeros=No
 
 
 # ─── Colores por Tier ─────────────────────────────────────────
-def info_tier(item_id):
-    """Extrae el tier del item_id y devuelve (tier_str, color_rich)."""
-    tier = item_id.split("_")[0][1:]  # "T4_FISH..." → "4"
-    color = COLORES_TIER.get(tier, "white")
-    return tier, color
 
 
 # ─── Reinicio ─────────────────────────────────────────────────

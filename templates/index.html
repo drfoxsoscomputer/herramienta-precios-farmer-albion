@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Inicio{% endblock %}
+{% block contenido %}
+
+<div class="text-center py-8">
+  <h1 class="text-4xl font-extrabold" style="color:#e6c45c">Albion Helper</h1>
+  <p class="text-zinc-500 mt-2 max-w-xl mx-auto">
+    Elige una seccion. Cada una muestra el mercado de un rubro:
+    precio por ciudad y el volumen de los ultimos 7 dias.
+  </p>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for s in secciones %}
+  {% if s.ruta in ('/pesca', '/recursos/fibra', '/salsas') %}
+  <a href="{{ s.ruta }}"
+     class="bg-panel border border-borde rounded-xl p-5 card-hover">
+    <div class="text-4xl mb-3">{{ s.icono }}</div>
+    <div class="font-bold text-lg">{{ s.nombre }}</div>
+    <div class="text-sm text-zinc-500 mt-1">{{ s.resena }}</div>
+  </a>
+  {% endif %}
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Albion Helper{% endblock %} · Albion Helper</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        oro:   { DEFAULT: '#c9a227', claro: '#e6c45c' },
+        fondo: '#141419',
+        panel: '#1d1d24',
+        borde: '#2a2a33',
+      },
+    },
+  },
+};
+</script>
+<style>
+  body { background: radial-gradient(1200px 600px at 50% -100px, #23232c 0%, #141419 60%); }
+  .card-hover { transition: transform .15s ease, border-color .15s ease; }
+  .card-hover:hover { transform: translateY(-2px); border-color: #c9a227 !important; }
+</style>
+</head>
+<body class="bg-fondo text-white min-h-screen antialiased">
+
+<!-- ─── Barra superior ─────────────────────────────────────────── -->
+<header class="sticky top-0 z-50 bg-panel/95 backdrop-blur border-b-2" style="border-color:#c9a227">
+  <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
+    <span class="text-2xl" title="Albion Helper">🎮</span>
+    <a href="/" class="font-bold text-lg" style="color:#e6c45c">Albion Helper</a>
+<nav class="flex items-center gap-1 ml-4 flex-wrap">
+      {% set menu = [
+        ('inicio',   '/',          'Inicio'),
+        ('pesca',    '/pesca',     'Pesca'),
+        ('recursos', '/recursos/fibra', 'Recursos'),
+        ('salsas',   '/salsas',    'Salsas'),
+      ] %}
+      {% for key, ruta, etiqueta in menu %}
+      <a href="{{ ruta }}"
+         class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+               {% if menu_activo == key %}bg-white/10 text-white{% else %}text-zinc-400 hover:text-white{% endif %}">
+        {{ etiqueta }}
+      </a>
+      {% endfor %}
+      <form action="/buscar" method="get" class="flex items-center gap-2 ml-4">
+        <input type="text" name="q" placeholder="Buscar items..." class="border rounded-lg px-2 py-1 text-white bg-panel/50 focus:outline-none focus:bg-panel/80 w-32">
+        <button type="submit" class="px-3 py-1 rounded-lg text-sm font-medium text-zinc-400 hover:text-white">Ir</button>
+      </form>
+    </nav>
+    <div class="ml-auto flex items-center gap-2">
+      <a href="/config" title="Configuracion"
+         class="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-colors
+                {% if menu_activo == 'config' %}bg-white/10 text-white{% endif %}">
+        ⚙ Config
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6">
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="max-w-5xl mx-auto px-4 pb-6 text-center text-xs text-zinc-600">
+  Datos de la API de Albion Online
+</footer>
+
+</body>
+</html>

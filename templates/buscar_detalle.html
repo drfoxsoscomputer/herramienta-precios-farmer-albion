@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}{{ nombre }}{% endblock %}
+{% block contenido %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/buscar" class="text-zinc-400 hover:text-white transition-colors">← Volver a buscar</a>
+</div>
+
+<div class="flex items-center gap-3">
+  <img src="{{ icono }}" alt="{{ nombre }}" class="w-12 h-12 object-contain"
+       onerror="this.style.display='none'">
+  <div>
+    <h1 class="text-3xl font-bold" style="color:{{ color }}">{{ nombre }}</h1>
+    <p class="text-zinc-400 text-sm">T{{ tier }} {{ etiqueta_tipo }}</p>
+  </div>
+</div>
+<p class="text-zinc-500 text-sm mt-2 mb-6">{{ resena }}</p>
+
+{% for panel in datos.paneles %}
+<div class="mb-6">
+  {% if panel.etiqueta %}
+  <div class="font-bold mb-2" style="color:#e6c45c">{{ panel.etiqueta }}</div>
+  {% endif %}
+  <div class="bg-panel border border-borde rounded-xl overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-zinc-400 border-b border-borde">
+          {% for h in panel.headers %}
+          <th class="px-4 py-3 {% if not loop.first %}text-right{% endif %} {% if h == 'Actualizado' %}text-zinc-600{% endif %}">{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in panel.filas %}
+        <tr class="border-b border-borde/50">
+          <td class="px-4 py-2.5">{{ f.ciudad }}</td>
+          {% for c in f.celdas %}
+          <td class="px-4 py-2.5 {% if c.es_fresca %}text-right text-zinc-600{% else %}text-right font-semibold{% endif %}"
+              {% if c.color %}style="color:{{ c.color }}"{% endif %}>{{ c.txt }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
