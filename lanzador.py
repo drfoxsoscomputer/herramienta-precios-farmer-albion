@@ -95,6 +95,7 @@ def cloudflared_activo():
                 ["tasklist", "/FI", "IMAGENAME eq cloudflared.exe"],
                 capture_output=True, text=True, encoding="utf-8",
                 errors="replace", timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             ).stdout
         return "cloudflared.exe" in out
     except Exception:
@@ -181,7 +182,8 @@ class Servicios:
                     pass
                 self.cloud_proc = None
             subprocess.run(["taskkill", "/F", "/IM", "cloudflared.exe"],
-                           capture_output=True, timeout=10)
+                           capture_output=True, timeout=10,
+                           creationflags=subprocess.CREATE_NO_WINDOW)
 
     def _matar_puerto(self, port):
         """Mata el proceso que ocupa `port` (para no dejar server huerfano)."""
@@ -189,6 +191,7 @@ class Servicios:
             out = subprocess.run(
                 ["netstat", "-ano"], capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=15,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             ).stdout
             pids = set()
             for linea in out.splitlines():
@@ -198,7 +201,8 @@ class Servicios:
                         pids.add(partes[-1])
             for pid in pids:
                 subprocess.run(["taskkill", "/F", "/PID", pid],
-                               capture_output=True, timeout=10)
+                               capture_output=True, timeout=10,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception:
             pass
 
@@ -275,7 +279,7 @@ def primer_arranque(parent):
 
     tk.Label(win, text="¡Bienvenido a Albion Helper!",
              font=("Segoe UI", 16, "bold")).pack(pady=(18, 4))
-    tk.Label(win, text="Elegí dónde guardar el programa y cómo querés usarlo.",
+    tk.Label(win, text="Elige dónde guardar el programa y cómo deseas usarlo.",
              font=("Segoe UI", 10)).pack(pady=(0, 14))
 
     # Carpeta
@@ -354,7 +358,8 @@ oShortcut.Save
 """)
         try:
             subprocess.run(["wscript.exe", vbs], capture_output=True,
-                           timeout=15)
+                           timeout=15,
+                           creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception:
             pass
 
@@ -469,7 +474,7 @@ class LanzadorApp:
         webbrowser.open(url)
         messagebox.showinfo(
             "Instalar como app",
-            "En el navegador buscá el ícono de instalar (en la barra de "
+            "En el navegador busca el ícono de instalar (en la barra de "
             "direcciones o en el menú). Albion Helper se instalará como app "
             "y tendrá su propia ventana.",
         )
@@ -494,7 +499,7 @@ class LanzadorApp:
                 messagebox.showerror(
                     "Error",
                     "No se encontró cloudflared.exe junto al programa. "
-                    "Descargalo a la carpeta del proyecto.",
+                    "Descárgalo a la carpeta del proyecto.",
                 )
         self._pintar_estado()
         if cloudflared_activo():
@@ -575,7 +580,7 @@ class LanzadorApp:
         messagebox.showinfo(
             "Descarga completa",
             f"Se descargó {nombre}\nen:\n{destino}\n\n"
-            "Descomprimilo y reemplazá la carpeta del programa para "
+            "Descomprímelo y reemplaza la carpeta del programa para "
             "actualizar. La URL de internet (Cloudflare) se regenera sola.",
         )
 
