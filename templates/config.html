@@ -2,7 +2,7 @@
 {% block titulo %}Configuracion{% endblock %}
 {% block contenido %}
 
-<h1 class="text-3xl font-bold" style="color:#e6c45c">Configuracion</h1>
+<h1 class="text-3xl font-bold titulo-oro" style="font-family:'Cinzel',Georgia,serif">Configuracion</h1>
 <p class="text-zinc-500 mt-2 mb-6">
   Abri Albion Helper desde cualquier dispositivo escaneando un QR.
 </p>
@@ -15,7 +15,7 @@
   <div class="bg-panel border border-borde rounded-xl p-6 text-center">
     <div class="text-sm text-zinc-400 mb-1">RED LOCAL (misma red WiFi)</div>
     <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all"
-         style="color:#e6c45c">{{ url_local }}</div>
+         style="color:#f5d576">{{ url_local }}</div>
     <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
          class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
          onerror="this.style.display='none'">
@@ -28,7 +28,7 @@
     <div class="text-sm text-zinc-400 mb-1">INTERNET (desde cualquier red)</div>
     {% if url_publica %}
     <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
-         style="color:#e6c45c">{{ url_publica }}</div>
+         style="color:#f5d576">{{ url_publica }}</div>
     <img src="/qr?url={{ url_publica | urlencode }}" alt="QR internet"
          class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
          onerror="this.style.display='none'">
