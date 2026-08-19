@@ -27,15 +27,19 @@
   <div class="bg-panel border border-borde rounded-xl p-6 text-center">
     <div class="text-sm text-zinc-400 mb-1">INTERNET (desde cualquier red)</div>
 
-    <div id="tunel-status" class="mb-3">
-      {% if url_publica %}
-      <span class="text-green-400">Tunel activo</span>
-      <button id="btn-detener" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-red-400 hover:text-red-300">Detener tunel</button>
-      {% else %}
-      <span class="text-zinc-500">Tunel inactivo</span>
-      <button id="btn-iniciar" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-green-400 hover:text-green-300">Iniciar tunel</button>
-      {% endif %}
-    </div>
+    <label class="inline-flex items-center gap-3 mb-4 cursor-pointer select-none">
+      <input type="checkbox" id="tunel-switch" class="peer sr-only" {% if url_publica %}checked{% endif %}>
+      <span class="relative w-14 h-8 rounded-full bg-zinc-600/80
+                   peer-checked:bg-green-500 transition-colors duration-300
+                   after:content-[''] after:absolute after:top-1 after:left-1
+                   after:w-6 after:h-6 after:bg-white after:rounded-full
+                   after:shadow-md after:transition-transform after:duration-300
+                   peer-checked:after:translate-x-6
+                   peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400/70"></span>
+      <span id="tunel-rotulo" class="text-sm {% if url_publica %}text-green-400{% else %}text-zinc-400{% endif %}">
+        Túnel {% if url_publica %}activo{% else %}inactivo{% endif %}
+      </span>
+    </label>
 
     <div id="url-publica"
          class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
@@ -70,31 +74,40 @@
 function actualizar_tunel(url) {
   const el = document.getElementById('url-publica');
   const qr = document.getElementById('qr-publica');
-  const st = document.getElementById('tunel-status');
-  if (url) {
+  const sw = document.getElementById('tunel-switch');
+  const rot = document.getElementById('tunel-rotulo');
+  const activo = Boolean(url);
+  if (sw) sw.checked = activo;
+  if (rot) {
+    rot.textContent = 'Túnel ' + (activo ? 'activo' : 'inactivo');
+    rot.className = 'text-sm ' + (activo ? 'text-green-400' : 'text-zinc-400');
+  }
+  if (activo) {
     el.textContent = url;
     el.style.display = '';
     qr.src = '/qr?url=' + encodeURIComponent(url);
     qr.style.display = '';
-    st.innerHTML = '<span class="text-green-400">Tunel activo</span> ' +
-      '<button id="btn-detener" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-red-400 hover:text-red-300">Detener tunel</button>';
   } else {
     el.textContent = 'Sin tunel activo';
     qr.style.display = 'none';
-    st.innerHTML = '<span class="text-zinc-500">Tunel inactivo</span> ' +
-      '<button id="btn-iniciar" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-green-400 hover:text-green-300">Iniciar tunel</button>';
   }
 }
 
 function bind_acciones() {
-  document.getElementById('btn-iniciar')?.addEventListener('click', async () => {
-    const r = await fetch('/tunel/start', {method: 'POST'});
-    const d = await r.json();
-    if (d.status === 'ok') actualizar_tunel(d.url);
-  });
-  document.getElementById('btn-detener')?.addEventListener('click', async () => {
-    await fetch('/tunel/stop', {method: 'POST'});
-    actualizar_tunel('');
+  document.getElementById('tunel-switch')?.addEventListener('change', async (e) => {
+    const on = e.target.checked;
+    if (on) {
+      const r = await fetch('/tunel/start', {method: 'POST'});
+      const d = await r.json();
+      if (d.status === 'ok') {
+        actualizar_tunel(d.url);
+      } else {
+        actualizar_tunel('');
+      }
+    } else {
+      await fetch('/tunel/stop', {method: 'POST'});
+      actualizar_tunel('');
+    }
   });
   document.getElementById('btn-cerrar')?.addEventListener('click', () => {
     fetch('/shutdown');
