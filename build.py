@@ -27,7 +27,7 @@ DATOS = [
 CLOUDFLARED_TEMP = os.path.join(os.environ.get("TEMP", ""), "cloudflared.exe")
 
 
-def run_pyinstaller(entry, name, console):
+def run_pyinstaller(entry, name, console, hidden_imports=None):
     """Corre PyInstaller onedir para `entry` -> dist/<name>/<name>.exe."""
     cmd = [
         PYTHON, "-m", "PyInstaller",
@@ -39,16 +39,20 @@ def run_pyinstaller(entry, name, console):
     ]
     if not console:
         cmd.append("--windowed")
+    for h in (hidden_imports or []):
+        cmd.append("--hidden-import")
+        cmd.append(h)
     cmd.append(entry)
     print(f"\n=== PyInstaller: {name} ===")
     subprocess.run(cmd, check=True, cwd=BASE)
 
 
 def main():
-    # 1) Lanzador GUI + server (sin ventana de consola)
-    run_pyinstaller(os.path.join(BASE, "lanzador.py"), "AlbionHelper", console=False)
+    # 1) Entry point de la app PWA (Flask + ventana webview maximizada)
+    run_pyinstaller(os.path.join(BASE, "app.py"), "AlbionHelper", console=False,
+                    hidden_imports=["webview"])
 
-    # 2) Consola (con terminal)
+    # 2) Consola (con terminal) — usa albion_helper.py original
     run_pyinstaller(os.path.join(BASE, "albion_helper.py"), "AlbionHelperConsole",
                     console=True)
 

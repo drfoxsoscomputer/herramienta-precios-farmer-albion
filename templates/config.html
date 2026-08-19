@@ -26,22 +26,32 @@
 
   <div class="bg-panel border border-borde rounded-xl p-6 text-center">
     <div class="text-sm text-zinc-400 mb-1">INTERNET (desde cualquier red)</div>
-    {% if url_publica %}
-    <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
-         style="color:#f5d576">{{ url_publica }}</div>
+
+    <div id="tunel-status" class="mb-3">
+      {% if url_publica %}
+      <span class="text-green-400">Tunel activo</span>
+      <button id="btn-detener" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-red-400 hover:text-red-300">Detener tunel</button>
+      {% else %}
+      <span class="text-zinc-500">Tunel inactivo</span>
+      <button id="btn-iniciar" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-green-400 hover:text-green-300">Iniciar tunel</button>
+      {% endif %}
+    </div>
+
+    <div id="url-publica"
+         class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
+         style="color:#f5d576">{{ url_publica or "Sin tunel activo" }}</div>
+
     <img src="/qr?url={{ url_publica | urlencode }}" alt="QR internet"
+         id="qr-publica"
          class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
          onerror="this.style.display='none'">
+
     <div class="text-xs text-zinc-500 mt-3">
       Funciona desde <b>cualquier red con internet</b> (WiFi ONU, datos moviles, etc.).
       La URL cambia al reiniciar el server.
     </div>
-    {% else %}
-    <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4">No hay tunel activo</div>
-    <div class="text-xs text-zinc-500 mt-3">
-      Para abrir desde internet: ejecuta <code>cloudflared tunnel --url http://localhost:{{ port }}</code>
-    </div>
-    {% endif %}
+
+    <button id="btn-cerrar" class="mt-4 px-4 py-1 rounded-lg text-sm font-medium text-red-400 hover:text-red-300">Cerrar aplicacion</button>
   </div>
 
 </div>
@@ -52,7 +62,45 @@
     <li><b class="text-white">QR local</b>: PC y celular en el mismo router/cable. Rapido y sin internet.</li>
     <li><b class="text-white">QR internet</b>: sirve para el celular en la red ONU u otras redes. Depende del tunel corriendo.</li>
     <li>Los precios se actualizan solos (la pagina se refresca cada 30 s).</li>
+    <li>Version actual: 1.0.0</li>
   </ul>
 </div>
+
+<script>
+function actualizar_tunel(url) {
+  const el = document.getElementById('url-publica');
+  const qr = document.getElementById('qr-publica');
+  const st = document.getElementById('tunel-status');
+  if (url) {
+    el.textContent = url;
+    el.style.display = '';
+    qr.src = '/qr?url=' + encodeURIComponent(url);
+    qr.style.display = '';
+    st.innerHTML = '<span class="text-green-400">Tunel activo</span> ' +
+      '<button id="btn-detener" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-red-400 hover:text-red-300">Detener tunel</button>';
+  } else {
+    el.textContent = 'Sin tunel activo';
+    qr.style.display = 'none';
+    st.innerHTML = '<span class="text-zinc-500">Tunel inactivo</span> ' +
+      '<button id="btn-iniciar" class="mt-2 px-3 py-1 rounded-lg text-sm font-medium text-green-400 hover:text-green-300">Iniciar tunel</button>';
+  }
+}
+
+function bind_acciones() {
+  document.getElementById('btn-iniciar')?.addEventListener('click', async () => {
+    const r = await fetch('/tunel/start', {method: 'POST'});
+    const d = await r.json();
+    if (d.status === 'ok') actualizar_tunel(d.url);
+  });
+  document.getElementById('btn-detener')?.addEventListener('click', async () => {
+    await fetch('/tunel/stop', {method: 'POST'});
+    actualizar_tunel('');
+  });
+  document.getElementById('btn-cerrar')?.addEventListener('click', () => {
+    fetch('/shutdown');
+  });
+}
+document.addEventListener('DOMContentLoaded', bind_acciones);
+</script>
 
 {% endblock %}

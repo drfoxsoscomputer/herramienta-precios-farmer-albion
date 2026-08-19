@@ -8,13 +8,13 @@ Consultar precios y datos del mercado de Albion Online desde tu PC o tu celular 
 
 ## 🚀 ¿Cómo correr?
 
-### Lanzador (recomendado)
+### App de escritorio (recomendado)
 
 ```bash
-python -X utf8 lanzador.py
+python -X utf8 app.py
 ```
 
-Ventana que controla todo: iniciar/detener el servidor web, abrir el navegador (o instalar como app PWA), ver el QR para el celular, activar/desactivar el túnel Cloudflare, ejecutar la consola y buscar actualizaciones. Se minimiza a la bandeja del sistema (junto al reloj).
+Abre la aplicación en una ventana tipo app maximizada (sin pestañas de navegador): levanta el servidor web y lo muestra adentro. Al cerrar la ventana, se apaga todo solo. Para verla en el celular, entrá a Configuración y escaneá el QR; ahí también podés activar/desactivar el acceso por internet (túnel Cloudflare) y cerrar la aplicación.
 
 ### Web
 
@@ -71,7 +71,7 @@ URL local + internet con sus QR para abrir la web en el celular o compartirla.
 ## 📦 Arquitectura del proyecto
 
 - `flask_app.py` — Web oficial (Flask + HTMX + Tailwind), puerto 8081
-- `lanzador.py` — Lanzador desktop (tkinter + pystray): controla web/túnel/consola/actualizaciones y se minimiza a la bandeja
+- `app.py` — Entry de la app de escritorio: levanta el servidor web y lo abre en una ventana tipo app maximizada
 - `build.py` — Empaquetado portable con PyInstaller (genera los 2 exes + datos)
 - `templates/` — Plantillas Jinja de todas las páginas
 - `static/` — PWA: manifest.json + sw.js
@@ -88,9 +88,9 @@ URL local + internet con sus QR para abrir la web en el celular o compartirla.
 
 ## 📦 Distribución portable
 
-¿Querés usarla en otra PC sin instalar nada (ni Python ni plugins)? Descomprimí el zip portable `dist/AlbionHelper-portable-v1.0.0.zip` en cualquier carpeta (incluso un pendrive) y ejecutá `AlbionHelper.exe`. Todo queda adentro: Python, librerías, datos y el túnel Cloudflare.
+¿Querés usarla en otra PC sin instalar nada (ni Python ni plugins)? Descomprimí el zip portable `dist/AlbionHelper-portable.zip` en cualquier carpeta (incluso un pendrive) y ejecutá `AlbionHelper.exe`. Todo queda adentro: Python, librerías, datos y el túnel Cloudflare.
 
-El primer arranque pregunta dónde guardar el programa, si crear acceso directo (escritorio / menú Inicio) y si abrir en navegador o instalar como app (PWA).
+El exe abre la aplicación en una ventana tipo app maximizada; al cerrarla se apaga todo. Para usarla desde el celular, entrá a Configuración y escaneá el QR (red local o internet).
 
 Para regenerar el paquete:
 

@@ -13,8 +13,11 @@
 import io
 import json
 import os
+import re
 import socket
+import subprocess
 import sys
+import time
 from urllib.parse import quote
 
 from flask import Flask, abort, render_template, request, send_file
@@ -36,6 +39,10 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CONFIG_FILE = os.path.join(BASE_DIR, "albion_config.json")
+
+CLOUDFLARED = os.path.join(BASE_DIR, "cloudflared.exe")
+TUN_URL_FILE = os.path.join(BASE_DIR, "tun_url.txt")
+TUN_LOG_FILE = os.path.join(BASE_DIR, "tun.log")
 
 HOST = "0.0.0.0"
 PORT = 8081
@@ -688,12 +695,15 @@ def recursos_detalle(tipo, tier_key, modo):
 @app.get("/config")
 def config():
     """Pantalla de configuracion: URL de la LAN + QR para el celular."""
+    activo = cloudflared_activo()
     tunel_url = ""
-    tun_file = os.path.join(BASE_DIR, "tun_url.txt")
-    if os.path.exists(tun_file):
-        with open(tun_file, "r", encoding="utf-8") as f:
-            tunel_url = f.read().strip()
-    return render_template("config.html", **_contexto("/config"), tunel_url=tunel_url)
+    if activo:
+        tun_file = os.path.join(BASE_DIR, "tun_url.txt")
+        if os.path.exists(tun_file):
+            with open(tun_file, "r", encoding="utf-8") as f:
+                tunel_url = f.read().strip()
+    return render_template("config.html", **_contexto("/config"),
+                           tunel_url=tunel_url)
 
 
 @app.get("/qr")
@@ -814,6 +824,137 @@ def buscar_detalle(id_base):
         etiqueta_tipo=etiqueta_tipo, resena=resena, datos=datos,
         icono=f"https://render.albiononline.com/v1/item/{id_base}.png",
     )
+
+
+# ─── Control de túnel Cloudflare ────────────────────────────────────────
+def cloudflared_activo():
+    """True si hay un proceso cloudflared corriendo."""
+    try:
+        out = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq cloudflared.exe"],
+                capture_output=True, text=True, encoding="utf-8",
+                errors="replace", timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            ).stdout
+        return "cloudflared.exe" in out
+    except Exception:
+        return False
+
+
+def iniciar_tunel_func():
+    """Lanza cloudflared apuntando a localhost:PORT y guarda la URL."""
+    if cloudflared_activo():
+        return False, "Tunel ya activo"
+    if not os.path.exists(CLOUDFLARED):
+        return False, "cloudflared.exe no encontrado"
+    try:
+        with open(TUN_LOG_FILE, "w", encoding="utf-8") as log:
+            args = [CLOUDFLARED, "tunnel", "--url", f"http://localhost:{PORT}",
+                    "--no-autoupdate"]
+            subprocess.Popen(
+                args,
+                cwd=BASE_DIR,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        # Esperar hasta ~15s a que cloudflared publique su URL en el log
+        url = ""
+        for _ in range(15):
+            time.sleep(1)
+            if os.path.exists(TUN_LOG_FILE):
+                with open(TUN_LOG_FILE, "r", encoding="utf-8",
+                          errors="ignore") as lf:
+                    texto = lf.read()
+                m = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", texto)
+                if m:
+                    url = m.group(0)
+                    break
+        # Guardar URL en tun_url.txt (vacía si no llegó a conectarse)
+        with open(TUN_URL_FILE, "w", encoding="utf-8") as f:
+            f.write(url)
+        if not url:
+            return False, "El tunel no publico una URL a tiempo"
+        return True, "Tunel iniciado"
+    except Exception as e:
+        # Si falla, limpiar archivo de log vacío
+        try:
+            with open(TUN_LOG_FILE, "w", encoding="utf-8") as f:
+                f.write("")
+        except Exception:
+            pass
+        return False, str(e)
+
+
+def detener_tunel_func():
+    """Detiene el proceso cloudflared y limpia archivos."""
+    try:
+        if cloudflared_activo():
+            subprocess.run(["taskkill", "/F", "/IM", "cloudflared.exe"],
+                          capture_output=True, timeout=10,
+                          creationflags=subprocess.CREATE_NO_WINDOW)
+        # Limpiar URL guardada
+        try:
+            with open(TUN_URL_FILE, "w", encoding="utf-8") as f:
+                f.write("")
+        except Exception:
+            pass
+        return True, "Tunel detenido"
+    except Exception as e:
+        return False, str(e)
+
+
+@app.post("/tunel/start")
+def tunel_start():
+    """EndPoint para iniciar el tunel desde la web."""
+    ok, msg = iniciar_tunel_func()
+    if ok:
+        # Leer URL del archivo tras iniciar
+        url = ""
+        if os.path.exists(TUN_URL_FILE):
+            with open(TUN_URL_FILE, "r", encoding="utf-8") as f:
+                url = f.read().strip()
+        return _({"status": "ok", "url": url, "message": msg})
+    return _({"status": "error", "message": msg}), 500
+
+
+@app.post("/tunel/stop")
+def tunel_stop():
+    """EndPoint para detener el tunel desde la web."""
+    ok, msg = detener_tunel_func()
+    if ok:
+        return _({"status": "ok", "message": msg})
+    return _({"status": "error", "message": msg}), 500
+
+
+@app.get("/status")
+def status():
+    """Retorna el estado real del tunel (basado en el proceso, no en el archivo)."""
+    activo = cloudflared_activo()
+    url = ""
+    if activo and os.path.exists(TUN_URL_FILE):
+        with open(TUN_URL_FILE, "r", encoding="utf-8") as f:
+            url = f.read().strip()
+    return _({"status": "ok", "tunel_activo": activo, "url": url})
+
+
+def _apagar_flask():
+    """Cierra el proceso por completo (server + ventana) con un pequeño retardo."""
+    time.sleep(0.5)
+    os._exit(0)
+
+
+@app.get("/shutdown")
+def shutdown():
+    """Apaga el servidor Flask (usado por la ventana al cerrarse)."""
+    import threading
+    threading.Thread(target=_apagar_flask, daemon=True).start()
+    return _({"status": "ok"})
+
+
+def _(obj):
+    """Helper para serializar a JSON-friendly dict."""
+    return obj
 
 
 # ─── Arranque ──────────────────────────────────────────────────
