@@ -61,6 +61,7 @@ def main():
         f"http://127.0.0.1:{PORT}/",
         maximized=True,   # abre maximizada, como pediste
         resizable=True,
+        text_select=True, # permite seleccionar texto en la ventana
     )
 
     # 4) Event loop de webview (bloqueante). Retorna al cerrar la ventana.
