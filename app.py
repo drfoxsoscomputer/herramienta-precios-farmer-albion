@@ -4,20 +4,21 @@
 #   1) Levanta Flask (hilo daemon) y abre UNA ventana chica (launcher)
 #      que pregunta qué hacer: Abrir la app / Solo servidor / Consola.
 #   2) "Abrir la app"   -> maximiza la misma ventana y carga la PWA completa.
-#      "Solo servidor"  -> maximiza la ventana y carga /config (QR del túnel),
-#                          queda en la bandeja.
-#      "Consola"        -> oculta la ventana, abre AlbionHelperConsole.exe
-#                          (terminal visible) y queda en la bandeja.
+#      "Solo servidor"  -> oculta la ventana, muestra UNA ventana aparte con
+#                          SOLO los QRs (/qr-solo, sin menú) y queda en bandeja.
+#      "Consola"        -> lanza AlbionHelperConsole.exe (terminal visible) y
+#                          SALE de todo: sin server, sin ventana, sin bandeja.
 #   3) Al cerrar la ventana de la app, pregunta SIEMPRE:
 #        - Sí      -> cerrar por completo (apaga server y sale)
 #        - No      -> minimizar a la bandeja (el server sigue activo)
 #        - Cancelar-> seguir con la ventana
-#   Bandeja (junto al reloj): volver a abrir, ver QR/config, túnel on/off, salir.
+#   Bandeja (junto al reloj): volver a abrir, ver QR (ventana de solo-QR),
+#   túnel on/off, salir.
 #   El menú de la bandeja muestra el estado real del túnel (check + texto) y el
 #   anillo del ícono cambia de color (verde = túnel activo).
 #
-#   Modo --server (headless): crea la ventana directamente en /config (QR) y
-#   deja la bandeja activa. Equivalente a elegir "Solo servidor".
+#   Modo --server (headless): abre la ventana de SOLO QRs + bandeja.
+#   Equivalente a elegir "Solo servidor".
 
 import ctypes
 import os
@@ -37,9 +38,11 @@ HOST = flask_app.HOST
 
 APP_URL = f"http://127.0.0.1:{PORT}/"
 CONFIG_URL = f"http://127.0.0.1:{PORT}/config"
+QR_SOLO_URL = f"http://127.0.0.1:{PORT}/qr-solo"
 
 # Estado global compartido entre el hilo del webview, el de la bandeja y el main.
-_window = None                # ventana webview actual (None si fue destruida)
+_window = None                # ventana webview principal (launcher / app / config)
+_qr_window = None             # ventana de solo-QR (creada oculta desde el inicio)
 _tray = None                  # icono pystray
 _cerrar_programatico = False  # True = el cierre lo dispara el código (no preguntar)
 
@@ -77,6 +80,7 @@ def _on_closing(window=None):
 
     Devuelve False para CANCELAR el cierre; None/True lo permite.
     """
+    global _cerrar_programatico
     if _cerrar_programatico:
         return  # cierre disparado por el código: permitir sin preguntar
 
@@ -96,6 +100,14 @@ def _on_closing(window=None):
     IDYES = 6
     IDNO = 7
     if res == IDYES:
+        # Cerrar por completo: hay que destruir AMBAS ventanas (principal y QR)
+        # para que webview.start() retorne y main() apague el server.
+        _cerrar_programatico = True
+        if _qr_window is not None:
+            try:
+                _qr_window.destroy()
+            except Exception:
+                pass
         return  # permite el cierre -> webview.start() retorna -> apaga todo
     if res == IDNO:
         _crear_bandeja()
@@ -165,7 +177,7 @@ def _label_tunel(item=None):
 
 
 def _mostrar_ventana(url):
-    """Muestra (crea si hace falta) la ventana y carga la URL indicada."""
+    """Muestra (crea si hace falta) la ventana PRINCIPAL y carga la URL."""
     global _window
     try:
         if _window is None:
@@ -179,12 +191,28 @@ def _mostrar_ventana(url):
         pass
 
 
+def _mostrar_ventana_qr():
+    """Muestra (crea si hace falta) la ventana de SOLO QRs."""
+    global _qr_window
+    try:
+        if _qr_window is None:
+            _crear_ventana_qr()
+        w = _qr_window
+        if w is None:
+            return
+        w.show()
+        w.restore()
+        w.load_url(QR_SOLO_URL)
+    except Exception:
+        pass
+
+
 def _tray_abrir(icon=None, item=None):
     _mostrar_ventana(APP_URL)
 
 
 def _tray_qr(icon=None, item=None):
-    _mostrar_ventana(CONFIG_URL)
+    _mostrar_ventana_qr()
 
 
 def _tray_tunel(icon=None, item=None):
@@ -204,6 +232,11 @@ def _tray_salir(icon=None, item=None):
     if _window is not None:
         try:
             _window.destroy()
+        except Exception:
+            pass
+    if _qr_window is not None:
+        try:
+            _qr_window.destroy()
         except Exception:
             pass
     if _tray is not None:
@@ -226,19 +259,19 @@ class LauncherApi:
         _window.load_url(APP_URL)
 
     def solo_servidor(self):
-        """Maximiza la ventana en /config (QR del túnel) y queda en bandeja."""
-        _mostrar_ventana(CONFIG_URL)
-        _crear_bandeja()
-
-    def abrir_consola(self):
-        """Oculta la ventana, abre la consola y queda en bandeja."""
+        """Oculta la ventana principal, muestra la de SOLO QRs y queda en bandeja."""
         if _window is not None:
             try:
                 _window.hide()
             except Exception:
                 pass
+        _mostrar_ventana_qr()
         _crear_bandeja()
+
+    def abrir_consola(self):
+        """Abre la consola y CIERRA todo lo demás (server, ventanas, bandeja)."""
         _lanzar_consola()
+        _tray_salir()
 
 
 def _lanzar_consola():
@@ -255,9 +288,9 @@ def _lanzar_consola():
         pass
 
 
-# ─── Ventana ──────────────────────────────────────────────────
+# ─── Ventanas ─────────────────────────────────────────────────
 def _crear_ventana(url=None):
-    """Crea la ventana webview (launcher chico por defecto) y engancha el cierre."""
+    """Crea la ventana webview principal (launcher chico por defecto) y engancha el cierre."""
     global _window
     _window = webview.create_window(
         "Albion Helper",
@@ -272,6 +305,31 @@ def _crear_ventana(url=None):
         _window.events.closing += _on_closing
 
 
+def _crear_ventana_qr():
+    """Crea la ventana de SOLO QRs (oculta al inicio; se muestra con "Solo servidor")."""
+    global _qr_window
+    _qr_window = webview.create_window(
+        "Albion Helper · QR",
+        QR_SOLO_URL,
+        width=460,
+        height=640,
+        resizable=True,
+        text_select=True,
+        hidden=True,
+    )
+    if _qr_window is not None:
+        _qr_window.events.closing += _on_qr_closing
+
+
+def _on_qr_closing(window=None):
+    """Al cerrar la ventana de QRs con la X: ocultarla a la bandeja, no cerrar."""
+    if _cerrar_programatico:
+        return  # cierre programático: permitir
+    _crear_bandeja()
+    threading.Timer(0.3, lambda: _qr_window.hide() if _qr_window else None).start()
+    return False  # cancela el cierre: la ventana queda viva, oculta
+
+
 # ─── Modos ────────────────────────────────────────────────────
 def main():
     # 1) Levantar Flask en hilo separado (daemon: se apaga con el proceso)
@@ -282,22 +340,23 @@ def main():
         print("No se pudo iniciar el servidor a tiempo.", file=sys.stderr)
         sys.exit(1)
 
-    # 3) Modo --server (headless): ventana directa en /config (QR) + bandeja,
+    # 3) Modo --server (headless): ventana de SOLO QRs + bandeja,
     #    equivalente a elegir "Solo servidor". Nunca abre el navegador.
     if "--server" in sys.argv:
         _crear_bandeja()
-        _crear_ventana(CONFIG_URL)
+        _mostrar_ventana_qr()
         webview.start()
         _shutdown_server()
         time.sleep(1)
         return
 
-    # 4) Ventana launcher (pregunta qué abrir)
+    # 4) Ventana launcher (pregunta qué abrir) + ventana de QRs oculta
     _crear_ventana()
+    _crear_ventana_qr()
 
-    # 5) Event loop de webview (bloqueante). Retorna cuando la ventana se cierra
-    #    por completo (la ventana nunca se destruye en "solo"/"consola": solo se
-    #    oculta o se recarga en otra URL, así que acá siempre es cierre real).
+    # 5) Event loop de webview (bloqueante). Retorna cuando TODAS las ventanas
+    #    se cierran (la principal se oculta en "solo"/"consola", no se destruye;
+    #    la de QRs también; el cierre por completo destruye ambas).
     webview.start()
 
     # 6) Cierre por completo

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Albion Helper · QR</title>
+<style>
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 400;
+  font-display: swap;
+  src: url('/static/fonts/Cinzel-400.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700;
+  font-display: swap;
+  src: url('/static/fonts/Cinzel-700.woff2') format('woff2'); }
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { colors: {
+    oro:   { DEFAULT: '#c9a256', claro: '#e8b84a', brillo: '#f5d576' },
+    bronce: '#8a6a3a',
+    ambar:  '#e8a545',
+    fondo: '#1a1410',
+    panel: '#241c16',
+    borde: '#3a2a24',
+  } } },
+};
+</script>
+<style>
+  body { background: radial-gradient(900px 620px at 50% -80px,
+           #3a2a35 0%, #1a1410 62%); }
+  .titulo-oro {
+    background: linear-gradient(180deg, #f5d576 0%, #e8b84a 55%, #c9a256 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: #e8b84a;
+    text-shadow: 0 0 18px rgba(232, 181, 74, .18);
+  }
+  .qr-img { opacity: 0; transition: opacity .25s ease; }
+  .qr-img[data-cargado] { opacity: 1; }
+</style>
+</head>
+<body class="bg-fondo text-white min-h-screen antialiased flex flex-col items-center justify-center px-4 py-6">
+
+  <h1 class="text-2xl font-bold titulo-oro text-center" style="font-family:'Cinzel',Georgia,serif">
+    Escaneá para abrir
+  </h1>
+  <p class="text-zinc-400 text-sm mt-1 mb-5 text-center">
+    El servidor sigue activo en segundo plano.
+  </p>
+
+  <div class="w-full max-w-sm space-y-4">
+
+    <div class="bg-panel border border-borde rounded-xl p-5 text-center">
+      <div class="text-sm text-zinc-400 mb-2">RED LOCAL (misma red WiFi)</div>
+      <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
+           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2"
+           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
+      <div class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
+           style="color:#f5d576">{{ url_local }}</div>
+    </div>
+
+    <div class="bg-panel border border-borde rounded-xl p-5 text-center">
+      <div class="text-sm text-zinc-400 mb-2">INTERNET (desde cualquier red)
+        <span id="estado-tunel" class="text-xs {% if tunel_url %}text-green-400{% else %}text-zinc-500{% endif %}">
+          {% if tunel_url %}· Activo{% else %}· Inactivo{% endif %}
+        </span>
+      </div>
+      <img src="/qr?url={{ tunel_url | urlencode }}" alt="QR internet"
+           id="qr-publica"
+           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2"
+           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
+      <div id="url-publica"
+           class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
+           style="color:#f5d576">{{ tunel_url or "Sin tunel activo" }}</div>
+    </div>
+
+  </div>
+
+  <div class="text-xs text-zinc-500 mt-6 text-center">
+    Albion Helper · podés ocultar esta ventana a la bandeja cerrando con la X.
+  </div>
+
+<script>
+async function poll_status() {
+  try {
+    const r = await fetch('/status');
+    const d = await r.json();
+    const el = document.getElementById('url-publica');
+    const qr = document.getElementById('qr-publica');
+    const rot = document.getElementById('estado-tunel');
+    const url = (d && d.url) || '';
+    if (el && url !== el.textContent) {
+      el.textContent = url || 'Sin tunel activo';
+      if (qr) {
+        qr.style.display = url ? '' : 'none';
+        if (url) qr.src = '/qr?url=' + encodeURIComponent(url);
+      }
+      if (rot) {
+        rot.textContent = url ? '· Activo' : '· Inactivo';
+        rot.className = 'text-xs ' + (url ? 'text-green-400' : 'text-zinc-500');
+      }
+    }
+  } catch (err) { /* server caido: ignorar */ }
+}
+setInterval(poll_status, 5000);
+</script>
+
+</body>
+</html>

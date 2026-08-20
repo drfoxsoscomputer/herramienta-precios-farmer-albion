@@ -719,6 +719,21 @@ def launcher():
                            version=version)
 
 
+@app.get("/qr-solo")
+def qr_solo():
+    """Ventana aparte con SOLO los QRs (local + túnel), sin menu ni config."""
+    activo = cloudflared_activo()
+    tunel_url = ""
+    if activo:
+        tun_file = os.path.join(BASE_DIR, "tun_url.txt")
+        if os.path.exists(tun_file):
+            with open(tun_file, "r", encoding="utf-8") as f:
+                tunel_url = f.read().strip()
+    url_local = f"http://{ip_lan()}:{PORT}/"
+    return render_template("qr_solo.html", **_contexto("/qr-solo"),
+                           url_local=url_local, tunel_url=tunel_url)
+
+
 @app.get("/qr")
 def qr():
     """QR en SVG del URL indicado (default: URL de la LAN). Generado al vuelo."""
