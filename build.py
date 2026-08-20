@@ -48,9 +48,9 @@ def run_pyinstaller(entry, name, console, hidden_imports=None):
 
 
 def main():
-    # 1) Entry point de la app PWA (Flask + ventana webview maximizada)
+    # 1) Entry point de la app PWA (Flask + ventana webview launcher + bandeja)
     run_pyinstaller(os.path.join(BASE, "app.py"), "AlbionHelper", console=False,
-                    hidden_imports=["webview"])
+                    hidden_imports=["webview", "pystray", "PIL"])
 
     # 2) Consola (con terminal) — usa albion_helper.py original
     run_pyinstaller(os.path.join(BASE, "albion_helper.py"), "AlbionHelperConsole",

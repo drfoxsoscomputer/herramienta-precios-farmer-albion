@@ -706,6 +706,19 @@ def config():
                            tunel_url=tunel_url)
 
 
+@app.get("/launcher")
+def launcher():
+    """Pantalla de inicio chica (ventana de escritorio): elige que abrir."""
+    version = "0.0.0"
+    try:
+        with open(os.path.join(BASE_DIR, "version.txt"), "r", encoding="utf-8") as f:
+            version = f.read().strip()
+    except Exception:
+        pass
+    return render_template("launcher.html", **_contexto("/launcher"),
+                           version=version)
+
+
 @app.get("/qr")
 def qr():
     """QR en SVG del URL indicado (default: URL de la LAN). Generado al vuelo."""
