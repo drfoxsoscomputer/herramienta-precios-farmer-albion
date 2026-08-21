@@ -25,8 +25,8 @@
   --borde:      #3a2a24;
 
   /* ── Vidrio (glassmorphism) ── */
-  --vidrio-bg:   rgba(36, 28, 22, .68);
-  --vidrio-blur: 12px;
+  --vidrio-bg:   rgba(36, 28, 22, .42);      /* translúcido de verdad */
+  --vidrio-blur: 10px;
   --vidrio-filo: rgba(247, 224, 138, .20);  /* luz que entra arriba */
 
   /* ── Metales (bisel: brillo arriba → sombra abajo) ── */
@@ -42,6 +42,20 @@
 body {
   background: radial-gradient(1100px 650px at 50% -80px,
               #3a2a35 0%, #1a1410 62%);
+}
+
+/* Escena de luz DETRÁS del contenido: sin esto el blur del vidrio
+   no tiene nada interesante que esmerilar (glassmorphism necesita
+   color detrás). Fijo: las manchas no scrollean con la página. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(420px 420px at 12% 8%,  rgba(232, 165, 69, .20), transparent 70%),
+    radial-gradient(520px 520px at 88% 22%, rgba(90, 60, 140, .16), transparent 70%),
+    radial-gradient(460px 460px at 55% 85%, rgba(201, 162, 86, .10), transparent 70%);
 }
 
 /* ─── Tipografía dorada ─────────────────────────────────────── */
@@ -97,8 +111,9 @@ body {
   background-color: var(--vidrio-bg);
   -webkit-backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
   backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
-  border-color: #6b5433;
-  box-shadow: inset 0 1px 0 var(--vidrio-filo), var(--halo-oro-reposo);
+  border-color: rgba(201, 162, 86, .30);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .28),
+              inset 0 1px 0 var(--vidrio-filo);
 }
 
 /* ─── Hover de cards (glow, sin pelear con bordes) ──────────── */
