@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(BASE, "dist", "AlbionHelper")
@@ -27,7 +28,7 @@ DATOS = [
 CLOUDFLARED_TEMP = os.path.join(os.environ.get("TEMP", ""), "cloudflared.exe")
 
 
-def run_pyinstaller(entry, name, console, hidden_imports=None):
+def run_pyinstaller(entry, name, console, hidden_imports=None, splash=None):
     """Corre PyInstaller onedir para `entry` -> dist/<name>/<name>.exe."""
     cmd = [
         PYTHON, "-m", "PyInstaller",
@@ -39,18 +40,33 @@ def run_pyinstaller(entry, name, console, hidden_imports=None):
     ]
     if not console:
         cmd.append("--windowed")
+    if splash:
+        # Splash de arranque (ventana nativa mientras se carga el exe).
+        cmd += ["--splash", splash]
     for h in (hidden_imports or []):
         cmd.append("--hidden-import")
         cmd.append(h)
     cmd.append(entry)
     print(f"\n=== PyInstaller: {name} ===")
-    subprocess.run(cmd, check=True, cwd=BASE)
+    # El antivirus (Defender) a veces bloquea un DLL recién copiado durante
+    # el COLLECT; reintentar suele bastar porque el Analysis queda cacheado.
+    for intento in range(1, 4):
+        resultado = subprocess.run(cmd, cwd=BASE)
+        if resultado.returncode == 0:
+            return
+        print(f"intento {intento} fallo (exit {resultado.returncode}); "
+              + ("reintento..." if intento < 3 else "abandonamos."))
+        time.sleep(6)
+    raise SystemExit(f"PyInstaller falló para {name} tras 3 intentos")
 
 
 def main():
+    splash = os.path.join(BASE, "splash.png")
+
     # 1) Entry point de la app PWA (Flask + ventana webview launcher + bandeja)
     run_pyinstaller(os.path.join(BASE, "app.py"), "AlbionHelper", console=False,
-                    hidden_imports=["webview", "pystray", "PIL"])
+                    hidden_imports=["webview", "pystray", "PIL"],
+                    splash=splash if os.path.exists(splash) else None)
 
     # 2) Consola (con terminal) — usa albion_helper.py original
     run_pyinstaller(os.path.join(BASE, "albion_helper.py"), "AlbionHelperConsole",

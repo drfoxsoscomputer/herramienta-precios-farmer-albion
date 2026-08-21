@@ -46,6 +46,30 @@ _qr_window = None             # ventana de solo-QR (creada oculta desde el inici
 _tray = None                  # icono pystray
 _cerrar_programatico = False  # True = el cierre lo dispara el código (no preguntar)
 
+_MUTEX = "AlbionHelper_InstanciaUnica"
+_kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+
+# ─── Splash / instancia única ────────────────────────────────
+def _instancia_duplicada():
+    """True si ya hay OTRA instancia corriendo (mutex de Windows)."""
+    ERROR_ALREADY_EXISTS = 183
+    _kernel32.CreateMutexW(None, False, _MUTEX)
+    return ctypes.get_last_error() == ERROR_ALREADY_EXISTS
+
+
+def _cerrar_splash(*_args):
+    """Cierra el splash de PyInstaller (no-op en dev o sin --splash).
+
+    Se engancha al evento shown de cada ventana: cuando la primera
+    ventana real aparece, el splash deja de tener razón de ser.
+    """
+    try:
+        import pyi_splash  # modulo solo presente en el exe compilado con --splash
+        pyi_splash.close()
+    except Exception:
+        pass
+
 # ─── Servidor ─────────────────────────────────────────────────
 def _wait_for_server(timeout=30):
     """Bloquea hasta que Flask responde en el puerto."""
@@ -303,6 +327,7 @@ def _crear_ventana(url=None):
     )
     if _window is not None:
         _window.events.closing += _on_closing
+        _window.events.shown += _cerrar_splash
 
 
 def _crear_ventana_qr():
@@ -319,6 +344,7 @@ def _crear_ventana_qr():
     )
     if _qr_window is not None:
         _qr_window.events.closing += _on_qr_closing
+        _qr_window.events.shown += _cerrar_splash
 
 
 def _on_qr_closing(window=None):
@@ -332,6 +358,24 @@ def _on_qr_closing(window=None):
 
 # ─── Modos ────────────────────────────────────────────────────
 def main():
+    # 0) Una sola instancia: si ya hay otra, avisar y salir.
+    if _instancia_duplicada():
+        _cerrar_splash()  # este proceso también abre splash: no dejarlo colgado
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            "Albion Helper ya está en ejecución.\n"
+            "Buscá la ventana abierta o el ícono junto al reloj.",
+            "Albion Helper",
+            0x00000040,  # MB_ICONINFORMATION
+        )
+        return
+
+    # Red de seguridad: si ninguna ventana llegara a mostrarse,
+    # el splash nunca vive más de 15 segundos.
+    _timer_splash = threading.Timer(15.0, _cerrar_splash)
+    _timer_splash.daemon = True
+    _timer_splash.start()
+
     # 1) Levantar Flask en hilo separado (daemon: se apaga con el proceso)
     threading.Thread(target=_run_flask, daemon=True).start()
 
