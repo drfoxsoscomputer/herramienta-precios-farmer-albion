@@ -41,6 +41,12 @@ else:
 CONFIG_FILE = os.path.join(BASE_DIR, "albion_config.json")
 
 CLOUDFLARED = os.path.join(BASE_DIR, "cloudflared.exe")
+if not os.path.exists(CLOUDFLARED):
+    # Fallback dev: build.py usa el cloudflared.exe de TEMP; en el exe
+    # empaquetado siempre vive junto al ejecutable.
+    _cf_temp = os.path.join(os.environ.get("TEMP", ""), "cloudflared.exe")
+    if _cf_temp and os.path.exists(_cf_temp):
+        CLOUDFLARED = _cf_temp
 TUN_URL_FILE = os.path.join(BASE_DIR, "tun_url.txt")
 TUN_LOG_FILE = os.path.join(BASE_DIR, "tun.log")
 

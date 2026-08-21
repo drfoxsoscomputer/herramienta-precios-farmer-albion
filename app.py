@@ -173,7 +173,7 @@ def _tunel_activo(item=None):
 
 
 def _label_tunel(item=None):
-    return "Túnel: Activo" if _tunel_activo() else "Túnel: Inactivo"
+    return "Internet: Disponible" if _tunel_activo() else "Internet: No disponible"
 
 
 def _mostrar_ventana(url):

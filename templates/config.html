@@ -13,7 +13,9 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
   <div class="bg-panel border border-borde rounded-xl p-6 text-center">
-    <div class="text-sm text-zinc-400 mb-1">RED LOCAL (misma red WiFi)</div>
+    <div class="text-sm text-zinc-400 mb-1">ACCESO PRIVADO
+      <span class="text-zinc-500">(red local · LAN o WiFi)</span>
+    </div>
     <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all"
          style="color:#f5d576">{{ url_local }}</div>
     <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
@@ -25,12 +27,14 @@
   </div>
 
   <div class="bg-panel border border-borde rounded-xl p-6 text-center">
-    <div class="text-sm text-zinc-400 mb-4">INTERNET (desde cualquier red)</div>
+    <div class="text-sm text-zinc-400 mb-4">ACCESO PÚBLICO
+      <span class="text-zinc-500">(desde internet)</span>
+    </div>
 
     <label class="flex items-center justify-between gap-3 mb-4 cursor-pointer select-none">
-      <span class="text-sm text-zinc-300">Túnel de internet
+      <span class="text-sm text-zinc-300">Acceso público
         <span id="tunel-rotulo" class="block text-xs {% if url_publica %}text-green-400{% else %}text-zinc-500{% endif %}">
-          {% if url_publica %}Activo{% else %}Inactivo{% endif %}
+          {% if url_publica %}Disponible{% else %}No disponible{% endif %}
         </span>
       </span>
       <input type="checkbox" id="tunel-switch" class="peer sr-only" {% if url_publica %}checked{% endif %}>
@@ -50,7 +54,7 @@
 
     <div id="url-publica"
          class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all break-all"
-         style="color:#f5d576">{{ url_publica or "Sin tunel activo" }}</div>
+         style="color:#f5d576">{{ url_publica or "No disponible" }}</div>
 
     <img src="/qr?url={{ url_publica | urlencode }}" alt="QR internet"
          id="qr-publica"
@@ -70,7 +74,7 @@
   <div class="font-bold text-white mb-2">Notas</div>
   <ul class="list-disc list-inside space-y-1">
     <li><b class="text-white">QR local</b>: PC y celular en el mismo router/cable. Rapido y sin internet.</li>
-    <li><b class="text-white">QR internet</b>: sirve para el celular en la red ONU u otras redes. Depende del tunel corriendo.</li>
+    <li><b class="text-white">QR internet</b>: sirve para el celular en la red ONU u otras redes. Necesita el acceso publico disponible.</li>
     <li>Los precios se actualizan solos (la pagina se refresca cada 30 s).</li>
     <li>Version actual: 1.0.0</li>
   </ul>
@@ -89,7 +93,7 @@ function set_cargando(estado) {
     if (el) el.style.display = 'none';
     if (qr) qr.style.display = 'none';
     if (rot) {
-      rot.textContent = 'Iniciando tunel...';
+      rot.textContent = 'Conectando...';
       rot.className = 'block text-xs text-amber-400';
     }
   } else {
@@ -106,7 +110,7 @@ function actualizar_tunel(url) {
   const activo = Boolean(url);
   if (sw) sw.checked = activo;
   if (rot) {
-    rot.textContent = activo ? 'Activo' : 'Inactivo';
+    rot.textContent = activo ? 'Disponible' : 'No disponible';
     rot.className = 'block text-xs ' + (activo ? 'text-green-400' : 'text-zinc-500');
   }
   if (activo) {
@@ -115,7 +119,7 @@ function actualizar_tunel(url) {
     qr.src = '/qr?url=' + encodeURIComponent(url);
     qr.style.display = '';
   } else {
-    el.textContent = 'Sin tunel activo';
+    el.textContent = 'No disponible';
     qr.style.display = 'none';
   }
 }

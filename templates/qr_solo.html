@@ -51,7 +51,9 @@ tailwind.config = {
   <div class="w-full max-w-sm space-y-4">
 
     <div class="bg-panel border border-borde rounded-xl p-5 text-center">
-      <div class="text-sm text-zinc-400 mb-2">RED LOCAL (misma red WiFi)</div>
+      <div class="text-sm text-zinc-400 mb-2">ACCESO PRIVADO
+        <span class="text-zinc-500">(red local · LAN o WiFi)</span>
+      </div>
       <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
            class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2"
            onload="this.dataset.cargado=1" onerror="this.style.display='none'">
@@ -60,18 +62,39 @@ tailwind.config = {
     </div>
 
     <div class="bg-panel border border-borde rounded-xl p-5 text-center">
-      <div class="text-sm text-zinc-400 mb-2">INTERNET (desde cualquier red)
-        <span id="estado-tunel" class="text-xs {% if tunel_url %}text-green-400{% else %}text-zinc-500{% endif %}">
-          {% if tunel_url %}· Activo{% else %}· Inactivo{% endif %}
-        </span>
+      <div class="text-sm text-zinc-400 mb-4">ACCESO PÚBLICO
+        <span class="text-zinc-500">(desde internet)</span>
       </div>
-      <img src="/qr?url={{ tunel_url | urlencode }}" alt="QR internet"
-           id="qr-publica"
-           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2"
-           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
+
+      <label class="flex items-center justify-between gap-3 mb-4 cursor-pointer select-none">
+        <span class="text-sm text-zinc-300">Acceso público
+          <span id="tunel-rotulo" class="block text-xs {% if tunel_url %}text-green-400{% else %}text-zinc-500{% endif %}">
+            {% if tunel_url %}Disponible{% else %}No disponible{% endif %}
+          </span>
+        </span>
+        <input type="checkbox" id="tunel-switch" class="peer sr-only" {% if tunel_url %}checked{% endif %}>
+        <span class="relative w-11 h-6 rounded-full shrink-0 bg-zinc-600/80
+                     peer-checked:bg-green-500 transition-colors duration-300
+                     after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                     after:w-5 after:h-5 after:bg-white after:rounded-full
+                     after:shadow-md after:transition-transform after:duration-300
+                     peer-checked:after:translate-x-5
+                     peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400/70"></span>
+      </label>
+
+      <div id="url-skeleton" class="mb-4 space-y-2" style="display:none">
+        <div class="h-8 bg-zinc-700/60 rounded-lg animate-pulse"></div>
+        <div class="h-36 bg-zinc-700/40 rounded-lg animate-pulse"></div>
+      </div>
+
       <div id="url-publica"
            class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
-           style="color:#f5d576">{{ tunel_url or "Sin tunel activo" }}</div>
+           style="color:#f5d576">{{ tunel_url or "No disponible" }}</div>
+
+      <img src="/qr?url={{ tunel_url | urlencode }}" alt="QR internet"
+           id="qr-publica"
+           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2 mt-3"
+           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
     </div>
 
   </div>
@@ -81,27 +104,89 @@ tailwind.config = {
   </div>
 
 <script>
+let url_actual = {{ tunel_url | tojson }};
+
+function set_cargando(estado) {
+  const sw = document.getElementById('tunel-switch');
+  const rot = document.getElementById('tunel-rotulo');
+  const skel = document.getElementById('url-skeleton');
+  const el = document.getElementById('url-publica');
+  const qr = document.getElementById('qr-publica');
+  if (sw) sw.disabled = estado;
+  if (estado) {
+    if (skel) skel.style.display = '';
+    if (el) el.style.display = 'none';
+    if (qr) qr.style.display = 'none';
+    if (rot) {
+      rot.textContent = 'Conectando...';
+      rot.className = 'block text-xs text-amber-400';
+    }
+  } else {
+    if (skel) skel.style.display = 'none';
+    if (el) el.style.display = '';
+  }
+}
+
+function actualizar_tunel(url) {
+  const el = document.getElementById('url-publica');
+  const qr = document.getElementById('qr-publica');
+  const sw = document.getElementById('tunel-switch');
+  const rot = document.getElementById('tunel-rotulo');
+  const cab = document.getElementById('estado-tunel');
+  const activo = Boolean(url);
+  url_actual = url;
+  if (sw) sw.checked = activo;
+  if (rot) {
+    rot.textContent = activo ? 'Disponible' : 'No disponible';
+    rot.className = 'block text-xs ' + (activo ? 'text-green-400' : 'text-zinc-500');
+  }
+  if (cab) {
+    cab.textContent = activo ? '· Disponible' : '· No disponible';
+    cab.className = 'text-xs ' + (activo ? 'text-green-400' : 'text-zinc-500');
+  }
+  if (activo) {
+    el.textContent = url;
+    el.style.display = '';
+    qr.src = '/qr?url=' + encodeURIComponent(url);
+    qr.style.display = '';
+  } else {
+    el.textContent = 'No disponible';
+    qr.style.display = 'none';
+  }
+}
+
+function bind_acciones() {
+  document.getElementById('tunel-switch')?.addEventListener('change', async (e) => {
+    const sw = e.target;
+    const on = sw.checked;
+    set_cargando(true);
+    try {
+      if (on) {
+        const r = await fetch('/tunel/start', {method: 'POST'});
+        const d = await r.json();
+        actualizar_tunel(d.status === 'ok' ? d.url : '');
+      } else {
+        await fetch('/tunel/stop', {method: 'POST'});
+        actualizar_tunel('');
+      }
+    } catch (err) {
+      actualizar_tunel('');
+    } finally {
+      set_cargando(false);
+    }
+  });
+}
+
 async function poll_status() {
   try {
     const r = await fetch('/status');
     const d = await r.json();
-    const el = document.getElementById('url-publica');
-    const qr = document.getElementById('qr-publica');
-    const rot = document.getElementById('estado-tunel');
     const url = (d && d.url) || '';
-    if (el && url !== el.textContent) {
-      el.textContent = url || 'Sin tunel activo';
-      if (qr) {
-        qr.style.display = url ? '' : 'none';
-        if (url) qr.src = '/qr?url=' + encodeURIComponent(url);
-      }
-      if (rot) {
-        rot.textContent = url ? '· Activo' : '· Inactivo';
-        rot.className = 'text-xs ' + (url ? 'text-green-400' : 'text-zinc-500');
-      }
-    }
+    if (url !== url_actual) actualizar_tunel(url);
   } catch (err) { /* server caido: ignorar */ }
 }
+
+document.addEventListener('DOMContentLoaded', bind_acciones);
 setInterval(poll_status, 5000);
 </script>
 
