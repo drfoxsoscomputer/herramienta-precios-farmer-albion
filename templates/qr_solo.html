@@ -24,7 +24,7 @@
         <span class="text-zinc-500">(red local · LAN o WiFi)</span>
       </div>
       <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
-           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2"
+           class="qr-img w-40 h-40 mx-auto qr-placa"
            onload="this.dataset.cargado=1" onerror="this.style.display='none'">
       <div class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
            style="color:#f5d576">{{ url_local }}</div>
@@ -62,7 +62,7 @@
 
       <img src="/qr?url={{ tunel_url | urlencode }}" alt="QR internet"
            id="qr-publica"
-           class="qr-img w-40 h-40 mx-auto rounded-lg bg-white p-2 mt-3"
+           class="qr-img w-40 h-40 mx-auto qr-placa mt-3"
            onload="this.dataset.cargado=1" onerror="this.style.display='none'">
     </div>
 

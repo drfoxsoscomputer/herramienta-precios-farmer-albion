@@ -19,7 +19,7 @@
     <div class="bg-black/40 rounded-lg px-4 py-2 font-mono text-xs mb-4 select-all"
          style="color:#f5d576">{{ url_local }}</div>
     <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
-         class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
+         class="w-44 h-44 mx-auto qr-placa"
          onerror="this.style.display='none'">
     <div class="text-xs text-zinc-500 mt-3">
       Solo funciona en dispositivos conectados al <b>mismo router</b> que esta PC.
@@ -58,7 +58,7 @@
 
     <img src="/qr?url={{ url_publica | urlencode }}" alt="QR internet"
          id="qr-publica"
-         class="w-44 h-44 mx-auto rounded-lg bg-white p-2"
+         class="w-44 h-44 mx-auto qr-placa"
          onerror="this.style.display='none'">
 
     <div class="text-xs text-zinc-500 mt-3">

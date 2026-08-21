@@ -160,3 +160,13 @@ body::before {
 /* ─── QRs ───────────────────────────────────────────────────── */
 .qr-img { opacity: 0; transition: opacity .25s ease; }
 .qr-img[data-cargado] { opacity: 1; }
+
+/* Placa blanca donde vive el QR: objeto físico apoyado SOBRE el
+   vidrio (sombra suave debajo) en vez de bloque pegado al panel. */
+.qr-placa {
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .50),
+              0 0 0 1px rgba(255, 255, 255, .06);
+}
