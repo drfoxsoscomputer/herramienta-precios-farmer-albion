@@ -1,0 +1,147 @@
+/* ═══════════════════════════════════════════════════════════════
+   TEMA ALBION GLASS — fuente única de la identidad visual.
+   Inspirado en la UI del juego pero 100% obra propia.
+   Espejos sincronizados: static/js/tema.js (tokens Tailwind)
+   y tema.py (splash PIL). Si cambiás un valor, cambialo en los tres.
+   ═══════════════════════════════════════════════════════════════ */
+
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 400;
+  font-display: swap;
+  src: url('/static/fonts/Cinzel-400.woff2') format('woff2'); }
+@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700;
+  font-display: swap;
+  src: url('/static/fonts/Cinzel-700.woff2') format('woff2'); }
+
+:root {
+  /* ── Paleta ── */
+  --oro-brillo: #f5d576;
+  --oro-claro:  #e8b84a;
+  --oro:        #c9a256;
+  --ambar:      #e8a545;
+  --bronce:     #8a6a3a;
+  --bronce-hondo: #5a4020;
+  --fondo:      #1a1410;
+  --panel:      #241c16;
+  --borde:      #3a2a24;
+
+  /* ── Vidrio (glassmorphism) ── */
+  --vidrio-bg:   rgba(36, 28, 22, .68);
+  --vidrio-blur: 12px;
+  --vidrio-filo: rgba(247, 224, 138, .20);  /* luz que entra arriba */
+
+  /* ── Metales (bisel: brillo arriba → sombra abajo) ── */
+  --metal-oro-grad:   linear-gradient(180deg, #f7e08a 0%, #c9a256 55%, #7a5c31 100%);
+  --metal-plata-grad: linear-gradient(180deg, #f4f4f5 0%, #a1a1aa 55%, #52525b 100%);
+
+  /* ── Glows ── */
+  --halo-oro-reposo: 0 0 18px rgba(232, 165, 69, .07);
+  --halo-oro-hover:  0 6px 26px rgba(232, 165, 69, .18), 0 0 0 1px rgba(201, 162, 86, .45);
+}
+
+/* ─── Fondo general (escena cálida desenfocada) ─────────────── */
+body {
+  background: radial-gradient(1100px 650px at 50% -80px,
+              #3a2a35 0%, #1a1410 62%);
+}
+
+/* ─── Tipografía dorada ─────────────────────────────────────── */
+.titulo-oro {
+  background: linear-gradient(180deg, var(--oro-brillo) 0%,
+              var(--oro-claro) 55%, var(--oro) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: var(--oro-claro);
+  text-shadow: 0 0 18px rgba(232, 181, 74, .18);
+}
+
+/* ─── Vidrio: panel translúcido con blur y filo de luz ──────── */
+.vidrio {
+  background-color: var(--vidrio-bg);
+  -webkit-backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
+  box-shadow: inset 0 1px 0 var(--vidrio-filo);
+}
+
+/* ─── Bordes metálicos biselados ──────────────────────────────
+   Borde transparente + dos capas de fondo: el panel en padding-box
+   y el gradiente metálico asomando solo por el borde (border-box). */
+.borde-metal-oro, .borde-metal-plata {
+  border: 1px solid transparent;
+  background-color: transparent;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-repeat: no-repeat;
+}
+.borde-metal-oro {
+  background-image: linear-gradient(var(--panel), var(--panel)),
+                    var(--metal-oro-grad);
+}
+.borde-metal-plata {
+  background-image: linear-gradient(var(--panel), var(--panel)),
+                    var(--metal-plata-grad);
+}
+.vidrio.borde-metal-oro {
+  background-image: linear-gradient(var(--vidrio-bg), var(--vidrio-bg)),
+                    var(--metal-oro-grad);
+}
+.vidrio.borde-metal-plata {
+  background-image: linear-gradient(var(--vidrio-bg), var(--vidrio-bg)),
+                    var(--metal-plata-grad);
+}
+
+/* ─── Receta estándar de card ────────────────────────────────
+   Toda superficie `bg-panel border` del proyecto se convierte en
+   vidrio con filo metálico sin editar cada plantilla. Las cards
+   con color de rareza inline (buscador) conservan su borde propio,
+   porque el estilo inline siempre gana. */
+.bg-panel.border {
+  background-color: var(--vidrio-bg);
+  -webkit-backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--vidrio-blur)) saturate(1.15);
+  border-color: #6b5433;
+  box-shadow: inset 0 1px 0 var(--vidrio-filo), var(--halo-oro-reposo);
+}
+
+/* ─── Hover de cards (glow, sin pelear con bordes) ──────────── */
+.card-hover {
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--halo-oro-hover);
+  filter: brightness(1.06);
+}
+
+/* ─── Botones del launcher ──────────────────────────────────── */
+.btn-modo {
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.btn-modo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--halo-oro-hover);
+  filter: brightness(1.08);
+}
+.btn-modo:active { transform: translateY(0); }
+
+/* ─── Línea metálica bajo la cabecera ───────────────────────── */
+.cabecera-metal { position: relative; }
+.cabecera-metal::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent,
+              var(--oro-claro) 18%, var(--bronce) 50%,
+              var(--oro-claro) 82%, transparent);
+  opacity: .85;
+}
+
+/* ─── Marco de ícono de item (estilo Albion) ────────────────── */
+.item-marco {
+  background: #0d0d0d;
+  border: 2px solid var(--bronce-hondo);
+  box-shadow: 0 0 16px rgba(232, 165, 69, .35), inset 0 0 6px rgba(0,0,0,.8);
+}
+
+/* ─── QRs ───────────────────────────────────────────────────── */
+.qr-img { opacity: 0; transition: opacity .25s ease; }
+.qr-img[data-cargado] { opacity: 1; }

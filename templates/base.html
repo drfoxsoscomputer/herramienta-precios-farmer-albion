@@ -8,15 +8,9 @@
 <link rel="icon" href="https://render.albiononline.com/v1/item/T4_BAG_SATCHEL_LV1.png">
 <meta name="theme-color" content="#1a1410">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="/static/js/tema.js"></script>
+<link rel="stylesheet" href="/static/css/tema.css">
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-<style>
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 400;
-  font-display: swap;
-  src: url('/static/fonts/Cinzel-400.woff2') format('woff2'); }
-@font-face { font-family: 'Cinzel'; font-style: normal; font-weight: 700;
-  font-display: swap;
-  src: url('/static/fonts/Cinzel-700.woff2') format('woff2'); }
-</style>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -24,47 +18,11 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script>
-tailwind.config = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        oro:   { DEFAULT: '#c9a256', claro: '#e8b84a', brillo: '#f5d576' },
-        bronce: '#8a6a3a',
-        ambar:  '#e8a545',
-        fondo: '#1a1410',
-        panel: '#241c16',
-        borde: '#3a2a24',
-      },
-    },
-  },
-};
-</script>
-<style>
-  body { background: radial-gradient(1100px 650px at 50% -80px,
-           #3a2a35 0%, #1a1410 62%); }
-  .titulo-oro {
-    background: linear-gradient(180deg, #f5d576 0%, #e8b84a 55%, #c9a256 100%);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; color: #e8b84a;
-    text-shadow: 0 0 18px rgba(232, 181, 74, .18);
-  }
-  .card-hover { transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
-  .card-hover:hover { transform: translateY(-2px); border-color: #c9a256 !important;
-    box-shadow: 0 4px 22px rgba(232, 165, 69, .15); }
-  /* Marco del icono de item (estilo Albion): cuadrado oscuro, borde bronce, halo ambar */
-  .item-marco {
-    background: #0d0d0d;
-    border: 2px solid #5a4020;
-    box-shadow: 0 0 16px rgba(232, 165, 69, .35), inset 0 0 6px rgba(0,0,0,.8);
-  }
-</style>
 </head>
 <body class="bg-fondo text-white min-h-screen antialiased">
 
 <!-- ─── Barra superior ─────────────────────────────────────────── -->
-<header class="sticky top-0 z-50 bg-panel/95 backdrop-blur border-b-2" style="border-color:#8a6a3a">
+<header class="sticky top-0 z-50 bg-panel/95 backdrop-blur border-b-2 cabecera-metal">
   <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
     <span class="text-2xl" title="Albion Helper">🎮</span>
     <a href="/" class="font-bold text-lg" style="font-family:'Cinzel',Georgia,serif; color:#f5d576">Albion Helper</a>

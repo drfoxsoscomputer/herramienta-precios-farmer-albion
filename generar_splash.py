@@ -1,39 +1,47 @@
 # generar_splash.py — Genera splash.png estilo banner Albion (obra original).
 # ─────────────────────────────────────────────────────────────────
-# Dibuja con PIL un splash de arranque inspirado en la estética del
-# juego (oro/bronce sobre fondo oscuro) usando SOLO elementos propios:
-# gradientes, polígonos simples y la fuente libre Cinzel (SIL OFL).
-# No se copia ningún asset de Sandbox Interactive.
+# Splash de arranque "glass": fondo con bokeh cálido desenfocado,
+# placa metálica con glow, título en Cinzel con gradiente de oro y
+# bloom. Todo dibujado con PIL usando la paleta de tema.py; no se
+# copia ningún asset del juego.
 #
 # Uso:  python -X utf8 generar_splash.py
 
+import random
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+
+import tema
 
 BASE = Path(__file__).parent
 FUENTE_VF = BASE / "static" / "fonts" / "Cinzel-VF.ttf"
 FUENTE_FALLBACK = "C:/Windows/Fonts/georgia.ttf"
 SALIDA = BASE / "splash.png"
 
-# Paleta propia alineada al tema web del proyecto.
-FONDO_ARRIBA = (36, 28, 22)    # #241c16
-FONDO_ABAJO = (18, 13, 10)     # #120d0a
-BRILLO = (96, 66, 30)          # resplandor cálido tras el banner
-PLACA_ARRIBA = (74, 56, 38)    # #4a3826
-PLACA_MEDIO = (46, 33, 21)     # #2e2115
-PLACA_ABAJO = (31, 21, 13)     # #1f150d
-BORDE = (138, 106, 58)         # #8a6a3a
-FILO = (201, 162, 86)          # #c9a256
-ORO_CLARO = (247, 224, 138)    # #f7e08a
-ORO = (232, 184, 74)           # #e8b84a
-ORO_OSCURO = (185, 138, 62)    # #b98a3e
-TEXTO_SUAVE = (154, 138, 112)  # #9a8a70
+# ── Paleta canónica (tema.py) ──
+ORO_BRILLO = tema.rgb(tema.ORO_BRILLO)
+ORO = tema.rgb(tema.ORO_CLARO)
+FILO = tema.rgb(tema.ORO)
+BORDE = tema.rgb(tema.BRONCE)
+PANEL = tema.rgb(tema.PANEL)
+
+# ── Derivados artísticos del splash (mezclas propias sobre el tema) ──
+FONDO_ARRIBA = PANEL                       # arranca del panel
+FONDO_ABAJO = (18, 13, 10)                 # cae a un marrón casi negro
+BRILLO = (96, 66, 30)                      # resplandor cálido central
+PLACA_ARRIBA = (74, 56, 38)                # metal: brillo arriba
+PLACA_MEDIO = (46, 33, 21)
+PLACA_ABAJO = (31, 21, 13)                 # ...sombra abajo
+TEXTO_SUAVE = (154, 138, 112)
 SOMBRA = (8, 5, 3)
+BOKEH_COLORES = [tema.rgb(tema.AMBAR), (185, 128, 58),
+                 BORDE, (122, 92, 49)]
 
 ESCALA = 2                    # dibuja al doble y reduce (nitidez)
 ANCHO, ALTO = 640 * ESCALA, 400 * ESCALA
 TITULO = "ALBION HELPER"
+RNG = random.Random(7)        # semilla fija: mismo splash en cada build
 
 
 def _lerp(c1, c2, t):
@@ -75,8 +83,28 @@ def _poligono_banner(x0, y0, x1, y1, cha):
             (x0, y1 - cha), (x0, y0 + cha)]
 
 
+def _pegar(canvas, color, mascara):
+    """Pega `color` sólido sobre canvas con `mascara` L como alfa."""
+    canvas.paste(color, (0, 0), mascara)
+
+
+def _bokeh(canvas, cantidad=9):
+    """Manchas cálidas desenfocadas: la 'escena' difusa detrás del vidrio."""
+    for _ in range(cantidad):
+        cx = RNG.uniform(0.02, 0.98) * ANCHO
+        cy = RNG.uniform(-0.12, 0.72) * ALTO   # luz que viene de arriba
+        r = RNG.uniform(90, 240) * ESCALA // 2 * 2
+        color = RNG.choice(BOKEH_COLORES)
+        intensidad = int(RNG.uniform(55, 110))
+        mask = Image.new("L", (ANCHO, ALTO), 0)
+        ImageDraw.Draw(mask).ellipse([cx - r, cy - r, cx + r, cy + r],
+                                     fill=intensidad)
+        mask = mask.filter(ImageFilter.GaussianBlur(r * 0.55))
+        _pegar(canvas, color, mask)
+
+
 def _texto_oro(canvas, texto, fuente, centro, dy_sombra=10):
-    """Texto con gradiente de oro + sombra cálida, centrado en `centro`."""
+    """Texto con bloom dorado + sombra cálida + gradiente nítido."""
     mascara = Image.new("L", canvas.size, 0)
     ImageDraw.Draw(mascara).text(centro, texto, font=fuente,
                                  fill=255, anchor="mm")
@@ -84,12 +112,21 @@ def _texto_oro(canvas, texto, fuente, centro, dy_sombra=10):
     if caja is None:
         return
     x0, y0, x1, y1 = caja
-    grad = _gradiente_vertical(
-        x1 - x0, y1 - y0,
-        [(0.0, ORO_CLARO), (0.45, ORO), (1.0, ORO_OSCURO)])
+
+    # sombra oscura desplazada (profundidad)
     sombra = ImageChops.offset(mascara, 0, dy_sombra)
     sombra = sombra.filter(ImageFilter.GaussianBlur(6))
-    canvas.paste(SOMBRA, (0, 0), sombra)
+    _pegar(canvas, SOMBRA, sombra)
+
+    # bloom: halo dorado suave detrás del trazo (glow glass)
+    bloom = mascara.filter(ImageFilter.GaussianBlur(14))
+    bloom = bloom.point(lambda v: int(v * 0.45))
+    _pegar(canvas, ORO_BRILLO, bloom)
+
+    # trazo nítido con gradiente metálico
+    grad = _gradiente_vertical(
+        x1 - x0, y1 - y0,
+        [(0.0, ORO_BRILLO), (0.45, ORO), (1.0, (185, 138, 62))])
     canvas.paste(grad, (x0, y0), mascara.crop(caja))
 
 
@@ -120,14 +157,10 @@ def _texto_espaciado(draw, ancho_total, texto, fuente, centro_y, espacio,
 
 
 def main():
-    # 1) Fondo con gradiente vertical + resplandor cálido central.
+    # 1) Fondo con gradiente vertical + bokeh cálido desenfocado.
     canvas = _gradiente_vertical(ANCHO, ALTO,
                                  [(0.0, FONDO_ARRIBA), (1.0, FONDO_ABAJO)])
-    brillo = Image.new("L", (ANCHO, ALTO), 0)
-    ImageDraw.Draw(brillo).ellipse(
-        [ANCHO * 0.12, ALTO * 0.22, ANCHO * 0.88, ALTO * 0.78], fill=110)
-    brillo = brillo.filter(ImageFilter.GaussianBlur(120))
-    canvas.paste(BRILLO, (0, 0), brillo)
+    _bokeh(canvas)
 
     # 2) Viñeta: bordes más oscuros.
     vineta = Image.new("L", (ANCHO, ALTO), 95)
@@ -136,12 +169,20 @@ def main():
     vineta = vineta.filter(ImageFilter.GaussianBlur(150))
     canvas.paste((0, 0, 0), (0, 0), vineta)
 
-    # 3) Placa metálica (banner horizontal con esquinas biseladas).
+    # 3) Geometría de la placa.
     bx0, by0, bx1, by1 = 140, 300, ANCHO - 140, 500
     cha = 34
     poly = _poligono_banner(bx0, by0, bx1, by1, cha)
     placa_mask = Image.new("L", (ANCHO, ALTO), 0)
     ImageDraw.Draw(placa_mask).polygon(poly, fill=255)
+
+    # 4) Glow alrededor de la placa: halo ancho tenue + núcleo cercano.
+    for radio, alfa in ((80, 70), (26, 120)):
+        glow = placa_mask.filter(ImageFilter.GaussianBlur(radio))
+        glow = glow.point(lambda v, a=alfa: int(v * a / 255))
+        _pegar(canvas, ORO, glow)
+
+    # 5) Relleno metálico + bordes.
     caja_placa = (bx0, by0, bx1, by1)
     grad_placa = _gradiente_vertical(
         bx1 - bx0, by1 - by0,
@@ -150,16 +191,25 @@ def main():
 
     draw = ImageDraw.Draw(canvas)
     draw.polygon(poly, outline=BORDE, width=4 * ESCALA // 2)
-    # filo superior iluminado (sensación metálica)
     draw.line([bx0 + cha, by0 + 3, bx1 - cha, by0 + 3], fill=FILO,
               width=ESCALA)
-    # remaches en las cuatro esquinas
+
+    # 6) Franja especular diagonal (reflejo de luz sobre el vidrio/metal).
+    brillo_mask = Image.new("L", (ANCHO, ALTO), 0)
+    ImageDraw.Draw(brillo_mask).polygon(
+        [(bx0 + 60, by0), (bx0 + 260, by0),
+         (bx0 + 150, by1), (bx0 - 50, by1)], fill=48)
+    brillo_mask = brillo_mask.filter(ImageFilter.GaussianBlur(18))
+    especular = ImageChops.multiply(brillo_mask, placa_mask)
+    _pegar(canvas, (255, 244, 214), especular)
+
+    # 7) Remaches en las cuatro esquinas.
     _remache(draw, bx0 + cha // 2, by0 + cha // 2)
     _remache(draw, bx1 - cha // 2, by0 + cha // 2)
     _remache(draw, bx0 + cha // 2, by1 - cha // 2)
     _remache(draw, bx1 - cha // 2, by1 - cha // 2)
 
-    # 4) Título en Cinzel con auto-ajuste al ancho de la placa.
+    # 8) Título en Cinzel con auto-ajuste al ancho de la placa.
     tam = 100
     fuente_titulo = _fuente(tam, peso=700)
     while (draw.textlength(TITULO, font=fuente_titulo) > (bx1 - bx0) - 120
@@ -168,12 +218,12 @@ def main():
         fuente_titulo = _fuente(tam, peso=700)
     _texto_oro(canvas, TITULO, fuente_titulo, (ANCHO // 2, 382))
 
-    # 5) Ornamento y subtítulo.
+    # 9) Ornamento y subtítulo.
     _ornamento(draw, ANCHO // 2, 452)
     _texto_espaciado(draw, ANCHO, "CARGANDO", _fuente(30, peso=400),
                      600, 14 * ESCALA // 2, TEXTO_SUAVE)
 
-    # 6) Versión (si existe version.txt) abajo a la derecha.
+    # 10) Versión (si existe version.txt) abajo a la derecha.
     try:
         version = (BASE / "version.txt").read_text(encoding="utf-8").strip()
     except Exception:
@@ -182,7 +232,7 @@ def main():
         draw.text((ANCHO - 40, ALTO - 36), f"v{version}",
                   font=_fuente(24, peso=400), fill=TEXTO_SUAVE, anchor="rm")
 
-    # 7) Reducción final y guardado.
+    # 11) Reducción final y guardado.
     canvas = canvas.resize((ANCHO // ESCALA, ALTO // ESCALA),
                            Image.Resampling.LANCZOS)
     canvas.save(SALIDA)
