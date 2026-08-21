@@ -14,3 +14,6 @@ build/
 dist/
 *.spec
 __pycache__/
+
+# binario vendado del tunel (lo pone el usuario, no viaja en git)
+cloudflared.exe

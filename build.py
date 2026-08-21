@@ -24,8 +24,26 @@ DATOS = [
     "albion_config.json", "catalog.json", "version.txt",
 ]
 
-# cloudflared.exe es opcional (tunel); si existe en TEMP lo copiamos.
+# cloudflared.exe (túnel): se espera VENDADO junto a este script
+# (reproducible, no depende de la máquina). TEMP queda como origen
+# heredado; si no está en ninguno de los dos, el build FALLA en voz alta.
+CLOUDFLARED_LOCAL = os.path.join(BASE, "cloudflared.exe")
 CLOUDFLARED_TEMP = os.path.join(os.environ.get("TEMP", ""), "cloudflared.exe")
+
+
+def _origen_cloudflared():
+    if os.path.exists(CLOUDFLARED_LOCAL):
+        return CLOUDFLARED_LOCAL
+    if os.path.exists(CLOUDFLARED_TEMP):
+        print("AVISO: usando cloudflared.exe de TEMP; "
+              "copialo junto a build.py para builds reproducibles.")
+        return CLOUDFLARED_TEMP
+    raise SystemExit(
+        "Falta cloudflared.exe (túnel de internet).\n"
+        f"  Esperado: {CLOUDFLARED_LOCAL}\n"
+        f"  Heredado: {CLOUDFLARED_TEMP}\n"
+        "Descargalo una vez del sitio oficial de Cloudflare y ponelo "
+        "junto a build.py.")
 
 
 def run_pyinstaller(entry, name, console, hidden_imports=None, splash=None):
@@ -90,12 +108,10 @@ def main():
                 shutil.copy2(src, dst)
             print(f"copiado: {item}")
 
-    # 5) cloudflared.exe opcional (para el tunel)
-    if os.path.exists(CLOUDFLARED_TEMP):
-        shutil.copy2(CLOUDFLARED_TEMP, os.path.join(DIST, "cloudflared.exe"))
-        print("copiado: cloudflared.exe")
-    else:
-        print("AVISO: cloudflared.exe no encontrado en TEMP — el tunel no funcionara.")
+    # 5) cloudflared.exe (túnel): obligatorio para un portable completo
+    shutil.copy2(_origen_cloudflared(),
+                 os.path.join(DIST, "cloudflared.exe"))
+    print("copiado: cloudflared.exe")
 
     print(f"\nListo. Carpeta portable: {DIST}")
 
