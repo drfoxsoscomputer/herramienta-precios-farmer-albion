@@ -113,7 +113,11 @@ def _hijos_mueren_conmigo():
         if not hjob:
             return
         info = _JOB_EXT_LIMIT()
-        info.BasicLimitInformation.LimitFlags = 0x00002000  # KILL_ON_JOB_CLOSE
+        # KILL_ON_JOB_CLOSE | BREAKAWAY_OK: los hijos heredan el job y mueren
+        # con nosotros (cloudflared), pero quien pida explícitamente escapar
+        # (CREATE_BREAKAWAY_FROM_JOB, ej. la consola) queda vivo.
+        # Valores de winnt.h: KILL_ON_JOB_CLOSE=0x2000, BREAKAWAY_OK=0x800.
+        info.BasicLimitInformation.LimitFlags = 0x00002000 | 0x00000800
         if not kernel32.SetInformationJobObject(
                 hjob, 9,  # JobObjectExtendedLimitInformation
                 ctypes.byref(info), ctypes.sizeof(info)):
@@ -388,6 +392,24 @@ class LauncherApi:
         _tray_salir()
 
 
+def _popen_consola(cmd):
+    """Lanza la consola FUERA del Job Object (BREAKAWAY).
+
+    El proceso vive en un job KILL_ON_JOB_CLOSE para que cloudflared muera
+    con la app; la consola debe SOBREVIVIR al cierre del launcher, así que
+    pide CREATE_BREAKAWAY_FROM_JOB (requiere BREAKAWAY_OK en el job, seteado
+    en _hijos_mueren_conmigo). Fallback sin flags si el entorno no permite
+    el escape.
+    """
+    breakaway = getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000)
+    nueva_consola = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
+    try:
+        return subprocess.Popen(cmd,
+                                creationflags=breakaway | nueva_consola)
+    except OSError:
+        return subprocess.Popen(cmd)
+
+
 def _lanzar_consola():
     """Abre AlbionHelperConsole.exe (o python albion_helper.py en dev)."""
     try:
@@ -395,7 +417,7 @@ def _lanzar_consola():
             consola = os.path.join(os.path.dirname(sys.executable),
                                    "AlbionHelperConsole.exe")
             if os.path.exists(consola):
-                subprocess.Popen([consola])
+                _popen_consola([consola])
                 return
             # Consola ausente en la carpeta portable: avisar en vez de
             # lanzarnos a nosotros mismos con argumentos de .py.
@@ -407,7 +429,7 @@ def _lanzar_consola():
                 0x00000040,  # MB_ICONINFORMATION
             )
             return
-        subprocess.Popen([sys.executable, "-X", "utf8", "albion_helper.py"])
+        _popen_consola([sys.executable, "-X", "utf8", "albion_helper.py"])
     except Exception:
         pass
 
