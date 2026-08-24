@@ -46,7 +46,8 @@ def _origen_cloudflared():
         "junto a build.py.")
 
 
-def run_pyinstaller(entry, name, console, hidden_imports=None, splash=None):
+def run_pyinstaller(entry, name, console, hidden_imports=None, splash=None,
+                    manifest=None):
     """Corre PyInstaller onedir para `entry` -> dist/<name>/<name>.exe."""
     cmd = [
         PYTHON, "-m", "PyInstaller",
@@ -61,6 +62,10 @@ def run_pyinstaller(entry, name, console, hidden_imports=None, splash=None):
     if splash:
         # Splash de arranque (ventana nativa mientras se carga el exe).
         cmd += ["--splash", splash]
+    if manifest:
+        # Manifest con dpiAware: el proceso nace DPI-aware y Windows nunca
+        # re-escala el splash ya visible (salto de tamaño/posición ~2.5s).
+        cmd += ["--manifest", manifest]
     for h in (hidden_imports or []):
         cmd.append("--hidden-import")
         cmd.append(h)
@@ -84,7 +89,8 @@ def main():
     # 1) Entry point de la app PWA (Flask + ventana webview launcher + bandeja)
     run_pyinstaller(os.path.join(BASE, "app.py"), "AlbionHelper", console=False,
                     hidden_imports=["webview", "pystray", "PIL"],
-                    splash=splash if os.path.exists(splash) else None)
+                    splash=splash if os.path.exists(splash) else None,
+                    manifest=os.path.join(BASE, "albion.manifest"))
 
     # 2) Consola (con terminal) — usa albion_helper.py original
     run_pyinstaller(os.path.join(BASE, "albion_helper.py"), "AlbionHelperConsole",

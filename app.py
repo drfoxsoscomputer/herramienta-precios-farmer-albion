@@ -47,6 +47,7 @@ _window = None                # ventana webview principal (launcher / app / conf
 _qr_window = None             # ventana de solo-QR (creada oculta desde el inicio)
 _tray = None                  # icono pystray
 _cerrar_programatico = False  # True = el cierre lo dispara el código (no preguntar)
+_relevo_hecho = False         # True = la ventana principal ya se mostró tras cargar
 
 _MUTEX = "AlbionHelper_InstanciaUnica"
 _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -138,6 +139,14 @@ def _instancia_duplicada():
     return ctypes.get_last_error() == ERROR_ALREADY_EXISTS
 
 
+def _log_splash(mensaje):
+    """Bitácora del relevo splash->contenido (diagnóstico temporal)."""
+    try:
+        print("[splash] " + mensaje, file=sys.stderr, flush=True)
+    except Exception:
+        pass
+
+
 def _cerrar_splash(*_args):
     """Cierra el splash de PyInstaller (no-op en dev o sin --splash).
 
@@ -147,8 +156,32 @@ def _cerrar_splash(*_args):
     try:
         import pyi_splash  # modulo solo presente en el exe compilado con --splash
         pyi_splash.close()
-    except Exception:
-        pass
+        _log_splash("pyi_splash.close ok")
+    except Exception as exc:
+        _log_splash("cerrar_splash fallo: " + repr(exc))
+
+
+def _relevo_contenido():
+    """Muestra la ventana principal recién cuando el contenido está pintado.
+
+    La ventana nace OCULTA: mientras carga, en pantalla solo existe el
+    splash de PyInstaller (el telón cubre TODO el escenario, no un dedo).
+    Cuando la página avisa por api.splash_listo(), se muestra la ventana
+    y en el mismo golpe cae el splash: nunca hay ventana vacía ni
+    asomando detrás del arte. Idempotente: launcher y qr-solo pueden
+    avisar; gana el primero. También lo usa el timer de seguridad de 15s.
+    """
+    global _relevo_hecho
+    if _relevo_hecho:
+        return
+    _relevo_hecho = True
+    try:
+        if _window is not None:
+            _window.show()
+            _log_splash("ventana principal mostrada")
+    except Exception as exc:
+        _log_splash("mostrar ventana fallo: " + repr(exc))
+    _cerrar_splash()
 
 # ─── Servidor ─────────────────────────────────────────────────
 def _wait_for_server(timeout=30):
@@ -369,6 +402,16 @@ def _tray_salir(icon=None, item=None):
 
 # ─── API expuesta a la página del launcher (pywebview.api.*) ──
 class LauncherApi:
+    def splash_listo(self):
+        """La página avisa que ya está pintada: recién ahí muere el splash.
+
+        Antes el splash se cerraba con events.shown (ventana EXISTE), lo que
+        dejaba al usuario mirando una ventana vacía mientras la página
+        terminaba de cargar. El relevo ahora es contenido listo -> cortina.
+        """
+        _log_splash("js llamo splash_listo")
+        _relevo_contenido()
+
     def abrir_app(self):
         """Maximiza la ventana y carga la PWA completa."""
         if _window is None:
@@ -435,38 +478,77 @@ def _lanzar_consola():
 
 
 # ─── Ventanas ─────────────────────────────────────────────────
+def _centrado_xy(ancho, alto):
+    """Coordenadas para que una ventana anchoxalto quede centrada en pantalla.
+
+    pywebview sin x/y abre la esquina superior izquierda: el launcher
+    debe entrar centrado desde el primer píxel (simetría pedida).
+    OJO: WinForms vuelve a escalar x/y por el DPI del sistema (medido:
+    pasamos 750 físico y abrió en 937 = 750*1.25), así que acá se
+    calcula en unidades lógicas dividiendo la pantalla por la escala.
+    """
+    try:
+        u = ctypes.windll.user32
+        sx = u.GetSystemMetrics(0)  # SM_CXSCREEN (físico: proceso DPI-aware)
+        sy = u.GetSystemMetrics(1)  # SM_CYSCREEN
+        try:
+            escala = u.GetDpiForSystem() / 96.0
+        except Exception:
+            escala = 1.0
+        if escala <= 0:
+            escala = 1.0
+        lx = int(sx / escala)
+        ly = int(sy / escala)
+        if lx <= ancho or ly <= alto:
+            return None
+        return ((lx - ancho) // 2, (ly - alto) // 2)
+    except Exception:
+        return None
+
+
 def _crear_ventana(url=None):
     """Crea la ventana webview principal (launcher chico por defecto) y engancha el cierre."""
     global _window
+    xy = _centrado_xy(420, 560)
     _window = webview.create_window(
         "Albion Helper",
         url or f"http://127.0.0.1:{PORT}/launcher",
         width=420,
         height=560,
+        x=xy[0] if xy else None,
+        y=xy[1] if xy else None,
         resizable=True,
         text_select=True,
+        hidden=True,  # nace oculta: se muestra sola cuando el contenido está pintado
+        background_color="#1a1410",  # nunca blanca: ni antes del CSS ni en el revelado
         js_api=LauncherApi(),
     )
     if _window is not None:
         _window.events.closing += _on_closing
-        _window.events.shown += _cerrar_splash
+        # El splash NO se cierra con events.shown: la página llama a
+        # api.splash_listo() cuando ya está pintada (con timer de seguridad
+        # de 15s en main() por si el puente JS falla).
 
 
 def _crear_ventana_qr():
     """Crea la ventana de SOLO QRs (oculta al inicio; se muestra con "Solo servidor")."""
     global _qr_window
+    xy_qr = _centrado_xy(460, 640)
     _qr_window = webview.create_window(
         "Albion Helper · QR",
         QR_SOLO_URL,
         width=460,
         height=640,
+        x=xy_qr[0] if xy_qr else None,
+        y=xy_qr[1] if xy_qr else None,
         resizable=True,
         text_select=True,
         hidden=True,
+        background_color="#1a1410",
     )
     if _qr_window is not None:
         _qr_window.events.closing += _on_qr_closing
-        _qr_window.events.shown += _cerrar_splash
+        # Mismo criterio: el splash lo cierra la página (api.splash_listo).
 
 
 def _on_qr_closing(window=None):
@@ -539,7 +621,7 @@ def main():
 
     # Red de seguridad: si ninguna ventana llegara a mostrarse,
     # el splash nunca vive más de 15 segundos.
-    _timer_splash = threading.Timer(15.0, _cerrar_splash)
+    _timer_splash = threading.Timer(15.0, _relevo_contenido)
     _timer_splash.daemon = True
     _timer_splash.start()
 

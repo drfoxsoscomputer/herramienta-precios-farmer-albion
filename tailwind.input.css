@@ -1,0 +1,4 @@
+/* Fuente del CSS compilado: npx tailwindcss -c tailwind.config.js -o static/css/tailwind.css --minify */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

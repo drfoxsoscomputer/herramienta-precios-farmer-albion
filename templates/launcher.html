@@ -4,9 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Albion Helper · Inicio</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/static/css/tailwind.css">
 <script src="/static/js/tema.js"></script>
 <link rel="stylesheet" href="/static/css/tema.css">
+<style>
+  /* Critical CSS: primera pintura ya centrada v+h y con fondo del tema,
+     sin depender de que lleguen las hojas externas. */
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: #1a1410;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    box-sizing: border-box;
+  }
+</style>
 </head>
 <body class="bg-fondo text-white min-h-screen antialiased flex flex-col items-center justify-center px-4">
 
@@ -52,6 +68,33 @@
   </div>
 
 <script>
+// Relevo del splash: la cortina vive hasta que ESTA página está pintada.
+// Sondeo cada 250ms: el evento pywebviewready corre en carrera contra la
+// creación de window.pywebview.api y puede perderse (visto en E2E: solo
+// cerraba el splash el timeout de 3s, dejando la cortina ~4s de más).
+// El sondeo no depende del evento; tras el primer éxito se detiene.
+// Tope 40 intentos (10s): si nada funciona, el timer de 15s de app.py
+// cierra el splash igual.
+(function () {
+  var listo = false;
+  function avisar() {
+    try {
+      if (window.pywebview && window.pywebview.api && window.pywebview.api.splash_listo) {
+        window.pywebview.api.splash_listo();
+        listo = true;
+      }
+    } catch (e) {}
+    return listo;
+  }
+  if (!avisar()) {
+    var restantes = 40;
+    var t = setInterval(function () {
+      restantes -= 1;
+      if (avisar() || restantes <= 0) { clearInterval(t); }
+    }, 250);
+  }
+})();
+
 function elegir(modo) {
   if (!window.pywebview || !window.pywebview.api) return;
   if (modo === 'app')    window.pywebview.api.abrir_app();

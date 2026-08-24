@@ -25,8 +25,8 @@
   --borde:      #3a2a24;
 
   /* ── Vidrio (glassmorphism) ── */
-  --vidrio-bg:   rgba(36, 28, 22, .42);      /* translúcido de verdad */
-  --vidrio-blur: 10px;
+  --vidrio-bg:   rgba(36, 28, 22, .45);      /* translúcido legible: .34 era demasiado oscuro sobre fondo oscuro */
+  --vidrio-blur: 12px;
   --vidrio-filo: rgba(247, 224, 138, .20);  /* luz que entra arriba */
 
   /* ── Metales (bisel: brillo arriba → sombra abajo) ── */
@@ -46,16 +46,29 @@ body {
 
 /* Escena de luz DETRÁS del contenido: sin esto el blur del vidrio
    no tiene nada interesante que esmerilar (glassmorphism necesita
-   color detrás). Fijo: las manchas no scrollean con la página. */
+   color detrás). Fijo + DERIVA LENTA: el movimiento es lo que hace
+   PERCEPTIBLE al vidrio (el blur cambia en vivo). Manchas vivas y
+   grandes en vmax para que también llenen la ventana chica. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -12%;
   z-index: -1;
   background:
-    radial-gradient(420px 420px at 12% 8%,  rgba(232, 165, 69, .20), transparent 70%),
-    radial-gradient(520px 520px at 88% 22%, rgba(90, 60, 140, .16), transparent 70%),
-    radial-gradient(460px 460px at 55% 85%, rgba(201, 162, 86, .10), transparent 70%);
+    radial-gradient(46vmax 46vmax at 14% 10%, rgba(232, 165, 69, .42), transparent 68%),
+    radial-gradient(54vmax 54vmax at 88% 24%, rgba(122, 84, 196, .30), transparent 70%),
+    radial-gradient(48vmax 48vmax at 58% 88%, rgba(201, 162, 86, .26), transparent 72%),
+    radial-gradient(36vmax 36vmax at 30% 72%, rgba(90, 60, 140, .22), transparent 75%);
+  animation: escena-deriva 26s ease-in-out infinite alternate;
+}
+
+@keyframes escena-deriva {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+  to   { transform: translate3d(1.5%, 1.5%, 0) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
 }
 
 /* ─── Tipografía dorada ─────────────────────────────────────── */
@@ -93,13 +106,26 @@ body::before {
   background-image: linear-gradient(var(--panel), var(--panel)),
                     var(--metal-plata-grad);
 }
+/* Vidrio + marco metálico: el truco de dos capas (padding-box/border-box)
+   NO sirve con relleno translúcido — el gradiente del borde se ve a través
+   de TODA la superficie y el botón queda como oro sólido (bug visto en
+   E2E 2026-08-23). Vidrio real: UNA capa translúcida + borde dorado
+   translúcido + luz que entra arriba + sombra suave. */
 .vidrio.borde-metal-oro {
-  background-image: linear-gradient(var(--vidrio-bg), var(--vidrio-bg)),
-                    var(--metal-oro-grad);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 34%);
+  background-color: rgba(36, 28, 22, .42);
+  border-color: rgba(201, 162, 86, .50);
+  box-shadow: inset 0 1px 0 rgba(247, 224, 138, .30),
+              inset 0 -1px 0 rgba(0, 0, 0, .28),
+              0 4px 24px rgba(0, 0, 0, .25);
 }
 .vidrio.borde-metal-plata {
-  background-image: linear-gradient(var(--vidrio-bg), var(--vidrio-bg)),
-                    var(--metal-plata-grad);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 34%);
+  background-color: rgba(36, 28, 22, .42);
+  border-color: rgba(244, 244, 245, .38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28),
+              inset 0 -1px 0 rgba(0, 0, 0, .28),
+              0 4px 24px rgba(0, 0, 0, .25);
 }
 
 /* ─── Receta estándar de card ────────────────────────────────
@@ -128,12 +154,32 @@ body::before {
 
 /* ─── Botones del launcher ──────────────────────────────────── */
 .btn-modo {
+  position: relative;
+  overflow: hidden; /* recorta el brillo especular al radio del botón */
   transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+/* Reflejo especular diagonal: la luz que hace que una superficie
+   LEA como vidrio pulido (sin esto es solo un rectángulo translúcido). */
+.btn-modo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+              rgba(255, 255, 255, .13) 0%,
+              rgba(255, 255, 255, .04) 26%,
+              transparent 46%);
+  pointer-events: none;
 }
 .btn-modo:hover {
   transform: translateY(-2px);
   box-shadow: var(--halo-oro-hover);
   filter: brightness(1.08);
+}
+.btn-modo:hover::before {
+  background: linear-gradient(115deg,
+              rgba(255, 255, 255, .20) 0%,
+              rgba(255, 255, 255, .06) 26%,
+              transparent 46%);
 }
 .btn-modo:active { transform: translateY(0); }
 

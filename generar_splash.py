@@ -88,14 +88,17 @@ def _pegar(canvas, color, mascara):
     canvas.paste(color, (0, 0), mascara)
 
 
-def _bokeh(canvas, cantidad=9):
-    """Manchas cálidas desenfocadas: la 'escena' difusa detrás del vidrio."""
+def _bokeh(canvas, cantidad=13):
+    """Manchas cálidas desenfocadas: la 'escena' difusa detrás del vidrio.
+
+    Vivas de verdad (intensidad alta y manchas grandes): si quedan tímidas,
+    el splash se lee como pintura oscura y no como vidrio."""
     for _ in range(cantidad):
         cx = RNG.uniform(0.02, 0.98) * ANCHO
         cy = RNG.uniform(-0.12, 0.72) * ALTO   # luz que viene de arriba
-        r = RNG.uniform(90, 240) * ESCALA // 2 * 2
+        r = RNG.uniform(120, 300) * ESCALA // 2 * 2
         color = RNG.choice(BOKEH_COLORES)
-        intensidad = int(RNG.uniform(55, 110))
+        intensidad = int(RNG.uniform(85, 155))
         mask = Image.new("L", (ANCHO, ALTO), 0)
         ImageDraw.Draw(mask).ellipse([cx - r, cy - r, cx + r, cy + r],
                                      fill=intensidad)
