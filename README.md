@@ -1,6 +1,6 @@
 # Albion Helper
 
-Herramienta de consultas de mercado para Albion Online: web local + consola, para consultar precios mientras jugás.
+Herramienta de consultas de mercado para Albion Online: web local + consola, para consultar precios mientras juega.
 
 ## 🎯 ¿Para qué sirve?
 
@@ -14,7 +14,7 @@ Consultar precios y datos del mercado de Albion Online desde tu PC o tu celular 
 python -X utf8 app.py
 ```
 
-Abre la aplicación en una ventana tipo app maximizada (sin pestañas de navegador): levanta el servidor web y lo muestra adentro. Al cerrar la ventana, se apaga todo solo. Para verla en el celular, entrá a Configuración y escaneá el QR; ahí también podés activar/desactivar el acceso por internet (túnel Cloudflare) y cerrar la aplicación.
+Abre la aplicación en una ventana tipo app maximizada (sin pestañas de navegador): levanta el servidor web y lo muestra adentro. Al cerrar la ventana, se apaga todo solo. Para verla en el celular, entre a Configuración y escanee el QR; ahí también puede activar/desactivar el acceso por internet (túnel Cloudflare) y cerrar la aplicación.
 
 ### Web
 
@@ -28,7 +28,7 @@ El servidor se inicia en el puerto **8081**:
 - `http://192.168.0.111:8081` — tu IP en la red local (para el celular en la misma red)
 - `http://127.0.0.1:8081` — conexión local
 
-Para verlo desde el celular: abrí la página de Config en la web, escaneá el QR local con la cámara, o ingresá la URL de la IP.
+Para verlo desde el celular: abra la página de Config en la web, escanee el QR local con la cámara, o ingrese la URL de la IP.
 
 ### Consola (original)
 
@@ -63,7 +63,7 @@ Listado por tier, crudo vs refinado, encantamientos `.1-.4` desde T4.
 Precios de las 5 salsas, recetas (ingredientes y cantidades), volumen semanal.
 
 ### Buscar
-Búsqueda global sobre el catálogo local (ignora acentos, tokens AND). Resultados en vivo mientras escribís; detalle por tipo: arma (5 paneles por encantamiento), diario (vacío/lleno), simple (5 calidades).
+Búsqueda global sobre el catálogo local (ignora acentos, tokens AND). Resultados en vivo mientras escribe; detalle por tipo: arma (5 paneles por encantamiento), diario (vacío/lleno), simple (5 calidades).
 
 ### Config
 URL local + internet con sus QR para abrir la web en el celular o compartirla.
@@ -88,9 +88,9 @@ URL local + internet con sus QR para abrir la web en el celular o compartirla.
 
 ## 📦 Distribución portable
 
-¿Querés usarla en otra PC sin instalar nada (ni Python ni plugins)? Descomprimí el zip portable `dist/AlbionHelper-portable.zip` en cualquier carpeta (incluso un pendrive) y ejecutá `AlbionHelper.exe`. Todo queda adentro: Python, librerías, datos y el túnel Cloudflare.
+¿Quiere usarla en otra PC sin instalar nada (ni Python ni plugins)? Descomprima el zip portable `dist/AlbionHelper-portable.zip` en cualquier carpeta (incluso un pendrive) y ejecute `AlbionHelper.exe`. Todo queda adentro: Python, librerías, datos y el túnel Cloudflare.
 
-El exe abre la aplicación en una ventana tipo app maximizada; al cerrarla se apaga todo. Para usarla desde el celular, entrá a Configuración y escaneá el QR (red local o internet).
+El exe abre la aplicación en una ventana tipo app maximizada; al cerrarla se apaga todo. Para usarla desde el celular, entre a Configuración y escanee el QR (red local o internet).
 
 Para regenerar el paquete:
 
