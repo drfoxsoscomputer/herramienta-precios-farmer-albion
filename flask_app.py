@@ -563,7 +563,7 @@ def inicio():
     nombres = (["Pesca", "Recursos", "Salsas"])
     secciones = []
     iconos = ["fish", "mountain", "pot"]
-    rutas = ["/pesca", "/recursos/fibra", "/salsas"]
+    rutas = ["/pesca", "/recursos", "/salsas"]
     for i, (nombre, ruta) in enumerate(zip(nombres, rutas), start=1):
         secciones.append({
             "nombre": nombre,
@@ -633,6 +633,22 @@ def pesca_detalle_tabla(nombre):
     tipo = info.get("tipo", "comun")
     datos = _datos_pez(nombre, item_id, trozos, tipo, config)
     return render_template("_pesca_tabla.html", datos=datos)
+
+
+@app.get("/recursos")
+def recursos_indice():
+    """Indice de los 5 tipos de recurso (tarjetas). Cada una lleva a sus tiers."""
+    config = load_config()
+    orden = ["fibra", "madera", "cuero", "mineral", "piedra"]
+    lista = []
+    for tipo in orden:
+        info = (config.get("recursos") or {}).get(tipo) or {}
+        nombre = info.get("nombre", tipo.upper())
+        par = PARES_RECURSO.get(tipo, nombre)
+        lista.append({"tipo": tipo, "par": par, "nombre": nombre,
+                      "color": colores_web.tier_a_css("2")})
+    return render_template("recursos_indice.html", **_contexto("/recursos"),
+                           recursos=lista, resena=RESENAS_MENU["recursos"])
 
 
 @app.get("/recursos/<tipo>")
@@ -818,7 +834,9 @@ def salsa_detalle_tabla(nombre):
 def buscar():
     """Pagina del buscador global: campo + resultados en vivo via HTMX."""
     q = request.args.get("q", "")
+    items = _buscar_items(q) if q else []
     return render_template("buscar.html", **_contexto("/buscar"), q=q,
+                           items=items,
                            resena=RESENAS_MENU["buscar"])
 
 
@@ -827,6 +845,8 @@ def buscar_tabla():
     """Fragmento HTMX con los resultados de la consulta (hasta 15)."""
     q = request.args.get("q", "")
     items = _buscar_items(q)
+    if request.args.get("modo") == "header":
+        return render_template("_buscar_header.html", items=items, q=q)
     return render_template("_buscar_resultados.html", items=items, q=q)
 
 

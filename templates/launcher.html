@@ -26,7 +26,9 @@
 </head>
 <body class="bg-fondo text-white min-h-screen antialiased flex flex-col items-center justify-center px-4">
 
-  <div class="text-5xl mb-2" title="Albion Helper">🎮</div>
+  <div class="mb-2" title="Albion Helper">
+    <svg class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="#f5d576" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 4c-2 2.2-2 5.2-2 8s0 5.8 2 8c2-2.2 2-5.2 2-8s0-5.8-2-8Z"/><circle cx="12" cy="12" r="1.2" fill="#f5d576"/></svg>
+  </div>
   <h1 class="text-3xl font-bold titulo-oro text-center" style="font-family:'Cinzel',Georgia,serif">
     Albion Helper
   </h1>
@@ -36,7 +38,9 @@
 
     <button onclick="elegir('app')"
             class="btn-modo vidrio borde-metal-oro w-full flex items-center gap-4 rounded-xl px-5 py-4 text-left cursor-pointer">
-      <span class="text-3xl">🖥️</span>
+      <span class="shrink-0" style="color:#f5d576">
+        <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3M6 10h4M17 13h.01"/></svg>
+      </span>
       <span>
         <span class="block font-bold text-lg">Abrir la app</span>
         <span class="block text-sm text-zinc-400">Ventana completa con todo el mercado</span>
@@ -45,7 +49,9 @@
 
     <button onclick="elegir('solo')"
             class="btn-modo vidrio borde-metal-oro w-full flex items-center gap-4 rounded-xl px-5 py-4 text-left cursor-pointer">
-      <span class="text-3xl">📱</span>
+      <span class="shrink-0" style="color:#f5d576">
+        <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+      </span>
       <span>
         <span class="block font-bold text-lg">Solo servidor</span>
         <span class="block text-sm text-zinc-400">QR para el celular · se oculta a la bandeja</span>
@@ -54,7 +60,9 @@
 
     <button onclick="elegir('consola')"
             class="btn-modo vidrio borde-metal-oro w-full flex items-center gap-4 rounded-xl px-5 py-4 text-left cursor-pointer">
-      <span class="text-3xl">⌨️</span>
+      <span class="shrink-0" style="color:#f5d576">
+        <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M7 9l4 4 4-4"/></svg>
+      </span>
       <span>
         <span class="block font-bold text-lg">Consola</span>
         <span class="block text-sm text-zinc-400">Herramienta de precios en la terminal</span>
@@ -66,6 +74,9 @@
   <div class="text-xs text-zinc-500 mt-6 text-center">
     Servidor web activo en el puerto 8081 · v{{ version }}
   </div>
+
+{% include "_modal_cierre.html" %}
+{% include "_toast.html" %}
 
 <script>
 // Relevo del splash: la cortina vive hasta que ESTA página está pintada.

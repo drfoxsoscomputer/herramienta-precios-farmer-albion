@@ -36,7 +36,42 @@
   /* ── Glows ── */
   --halo-oro-reposo: 0 0 18px rgba(232, 165, 69, .07);
   --halo-oro-hover:  0 6px 26px rgba(232, 165, 69, .18), 0 0 0 1px rgba(201, 162, 86, .45);
+
+  /* ── África semántica (tarea 4/9): SIEMPRE con contraste >= 4.5:1
+     sobre --fondo (#1a1410). Verificados: .texto-suave 7.8:1,
+     .texto-atenuado 6.6:1, .ok 7.9:1, .peligro 6.7:1. Nunca usar
+     zinc-600 u otro gris oscuro para texto (2.4:1 = ilegible). */
+  --texto-suave:   #b8a88c;  /* texto secundario legible */
+  --texto-atenuado:#a8a096;  /* metadatos, fechas */
+  --ok:       #7ab88e;       /* positivo: min/ganancia/tunel activo */
+  --peligro:  #d48a7a;       /* negativo: max/perdida/error */
 }
+
+/* ─── Foco visible (teclado) ───────────────────────────────
+   Solo en :focus-visible (nunca en click/rato), anillo dorado
+   visible sobre cualquier superficie. */
+:focus-visible {
+  outline: 2px solid var(--oro-claro);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Texto con contraste garantizado: reemplaza text-zinc-600 en
+   "Actualizado", footers y metadatos que hoy no llegan a 4.5:1. */
+.texto-suave    { color: var(--texto-suave); }
+.texto-atenuado { color: var(--texto-atenuado); }
+.ok       { color: var(--ok); }
+.peligro  { color: var(--peligro); }
+
+/* ─── Tablas (tarea 7/9) ────────────────────────────────────
+   Hover de fila para leer la fila completa sin perder la
+   referencia. Sin sticky: el scroll horizontal no lo habilita. */
+.fila-hover tbody tr { transition: background .12s ease; }
+.fila-hover tbody tr:hover { background: rgba(255, 255, 255, .05); }
+.fila-hover th, .fila-hover td { border-bottom-color: rgba(58, 42, 36, .55); }
+/* La primera celda es el nombre de la fila (th scope=row): se ve como
+   el resto del texto, sin la negrita por defecto de los <th>. */
+.fila-hover th[scope="row"] { font-weight: normal; text-align: left; }
 
 /* ─── Fondo general (escena cálida desenfocada) ─────────────── */
 body {

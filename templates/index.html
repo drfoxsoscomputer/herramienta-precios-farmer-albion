@@ -12,10 +12,18 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
   {% for s in secciones %}
-  {% if s.ruta in ('/pesca', '/recursos/fibra', '/salsas') %}
+  {% if s.ruta in ('/pesca', '/recursos', '/salsas') %}
   <a href="{{ s.ruta }}"
      class="bg-panel border border-borde rounded-xl p-5 card-hover">
-    <div class="text-4xl mb-3">{{ s.icono }}</div>
+    <div class="text-4xl mb-3" style="color:#f5d576">
+      {% if s.nombre == 'Pesca' %}
+      <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/><path d="M10.46 7.26C10.2 5.88 9.17 4.24 8 3h5.8a2 2 0 0 1 1.98 1.57l.02.02"/></svg>
+      {% elif s.nombre == 'Recursos' %}
+      <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+      {% else %}
+      <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16v1a8 8 0 0 1-16 0Z"/><path d="M19.47 3.25 18.74 5M14.71 3.25l.73 1.75M9.29 3.25 8.56 5M4.53 3.25l.73 1.75M8 11V8h8v3M2 21h20"/></svg>
+      {% endif %}
+    </div>
     <div class="font-bold text-lg">{{ s.nombre }}</div>
     <div class="text-sm text-zinc-500 mt-1">{{ s.resena }}</div>
   </a>

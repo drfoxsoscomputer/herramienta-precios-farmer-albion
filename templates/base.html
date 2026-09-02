@@ -18,48 +18,112 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<style>
+  /* Submenu de Recursos al pasar el raton (hover). El boton "Recursos"
+     lleva a /recursos (ventana de tarjetas); el panel despliega los 5. */
+  .recurso-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 50;
+    min-width: 170px;
+    padding: 6px;
+    background: rgba(26, 20, 16, 0.98);
+    border: 1px solid rgba(201, 162, 86, 0.40);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  }
+  .recurso-drop:hover .recurso-menu,
+  .recurso-drop:focus-within .recurso-menu {
+    display: block;
+  }
+</style>
+<style>
+  /* En pantallas angostas el nav envuelve y el buscador pasa abajo. */
+  @media (max-width: 640px) {
+    header > div { flex-wrap: wrap; }
+    .menu-buscar { margin-left: 0 !important; width: 100%; }
+    .menu-buscar form { width: 100%; }
+    .menu-buscar input { width: 100% !important; }
+  }
+</style>
+
 </head>
 <body class="bg-fondo text-white min-h-screen antialiased">
 
-<!-- ─── Barra superior ─────────────────────────────────────────── -->
+<!-- ─── Barra superior: una sola fila ──────────────────────────── -->
 <header class="sticky top-0 z-50 bg-panel/95 backdrop-blur border-b-2 cabecera-metal">
-  <div class="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
-    <span class="text-2xl" title="Albion Helper">🎮</span>
-    <a href="/" class="font-bold text-lg" style="font-family:'Cinzel',Georgia,serif; color:#f5d576">Albion Helper</a>
-<nav class="flex items-center gap-1 ml-4 flex-wrap">
+  <div class="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3">
+    <a href="/" class="flex items-center gap-2 shrink-0" title="Albion Helper">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+           stroke="#f5d576" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2l8 3v5.5c0 5.2-3.4 8.8-8 11-4.6-2.2-8-5.8-8-11V5l8-3z"/>
+        <path d="M12 6l1.6 3.2L17 10l-2.7 2.6 1 3.9L12 14.7 8.7 16.5l1-3.9L7 10l3.4-.8L12 6z"/>
+      </svg>
+      <span class="font-bold" style="font-family:'Cinzel',Georgia,serif; color:#f5d576">Albion Helper</span>
+    </a>
+
+    <nav class="flex items-center gap-1 flex-wrap" aria-label="Principal">
       {% set menu = [
-        ('inicio',   '/',          'Inicio'),
-        ('pesca',    '/pesca',     'Pesca'),
-        ('recursos', '/recursos/fibra', 'Recursos'),
-        ('salsas',   '/salsas',    'Salsas'),
+        ('inicio',   '/',        'Inicio'),
+        ('pesca',    '/pesca',   'Pesca'),
+        ('salsas',   '/salsas',  'Salsas'),
       ] %}
       {% for key, ruta, etiqueta in menu %}
       <a href="{{ ruta }}"
-         class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+         class="px-3 py-2 rounded-lg text-sm font-medium transition-colors
                {% if menu_activo == key %}bg-white/10 text-white{% else %}text-zinc-400 hover:text-white{% endif %}">
         {{ etiqueta }}
       </a>
       {% endfor %}
-      <form action="/buscar" method="get" class="flex items-center gap-2 ml-4">
-        <input type="text" name="q" placeholder="Buscar items..." class="border rounded-lg px-2 py-1 text-white bg-panel/50 focus:outline-none focus:bg-panel/80 w-32">
-        <button type="submit" class="px-3 py-1 rounded-lg text-sm font-medium text-zinc-400 hover:text-white">Ir</button>
-      </form>
+      <div class="recurso-drop" style="position:relative">
+        <a href="/recursos"
+           class="px-3 py-2 inline-block rounded-lg text-sm font-medium transition-colors
+                 {% if menu_activo == 'recursos' %}bg-white/10 text-white{% else %}text-zinc-400 hover:text-white{% endif %}">
+          Recursos
+        </a>
+        <div class="recurso-menu" role="menu" aria-label="Recursos">
+          {% set recursos_sub = [
+            ('fibra',   'Fibra/Tela'),
+            ('madera',  'Troncos/Tablas'),
+            ('cuero',   'Piel/Cuero'),
+            ('mineral', 'Mineral/Barra'),
+            ('piedra',  'Piedra/Bloque'),
+          ] %}
+          {% for tipo, nombre in recursos_sub %}
+          <a href="/recursos/{{ tipo }}" role="menuitem"
+             class="block px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5">{{ nombre }}</a>
+          {% endfor %}
+        </div>
+      </div>
     </nav>
-    <div class="ml-auto flex items-center gap-2">
-      <button type="button" onclick="location.reload()" title="Actualizar (F5)"
-              class="px-2.5 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-             stroke-linejoin="round" style="display:block">
-          <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
-        </svg>
-      </button>
-      <a href="/config" title="Configuracion"
-         class="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-colors
-               {% if menu_activo == 'config' %}bg-white/10 text-white{% endif %}">
-        ⚙ Config
-      </a>
+
+    <div class="menu-buscar flex items-center gap-2 shrink-0" style="margin-left:auto; position:relative">
+      <form action="/buscar" method="get" class="flex items-center gap-2">
+        <input type="text" name="q" placeholder="Buscar items..." autocomplete="off"
+               hx-get="/buscar/tabla?modo=header" hx-trigger="input changed delay:300ms"
+               hx-target="#resultados-header" hx-swap="innerHTML" hx-push-url="false"
+               class="border rounded-lg px-2 py-2 text-white bg-panel/50 focus:outline-none focus:bg-panel/80 w-40">
+        <button type="submit" class="btn-buscar px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-colors">Ir</button>
+      </form>
+      <div id="resultados-header" class="hidden"></div>
     </div>
+
+    <button type="button" onclick="location.reload()" title="Actualizar"
+            class="px-2 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors shrink-0">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+           stroke-linejoin="round" style="display:block">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/>
+      </svg>
+    </button>
+    <a href="/config" title="Configuracion"
+       class="px-2 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-colors shrink-0
+             {% if menu_activo == 'config' %}bg-white/10 text-white{% endif %}">
+      ⚙ Config
+    </a>
   </div>
 </header>
 
@@ -67,9 +131,74 @@ if ('serviceWorker' in navigator) {
   {% block contenido %}{% endblock %}
 </main>
 
-<footer class="max-w-5xl mx-auto px-4 pb-6 text-center text-xs text-zinc-600">
+<footer class="max-w-5xl mx-auto px-4 pb-6 text-center text-xs texto-atenuado">
   Datos de la API de Albion Online
 </footer>
 
+{% include "_modal_cierre.html" %}
+{% include "_toast.html" %}
+
+<script>
+// Buscador del header: desplegable de resultados en vivo (tipo Google).
+(function () {
+  var wrap = document.querySelector('.menu-buscar');
+  var box = document.getElementById('resultados-header');
+  var form = wrap && wrap.querySelector('form');
+  var input = form && form.querySelector('input[name="q"]');
+  if (!wrap || !box || !form || !input) return;
+
+  function ocultar() { box.style.display = 'none'; }
+  function navegar(q) {
+    var v = (q || '').trim();
+    window.location.href = '/buscar' + (v ? '?q=' + encodeURIComponent(v) : '');
+  }
+  // Al click en una card del desplegable, navega a /buscar con la query
+  // (la card en si ya enlaza a /buscar/item/<id>; este handler respeta ese link).
+  document.addEventListener('click', function (e) {
+    if (!wrap.contains(e.target)) { ocultar(); return; }
+  });
+  // Muestra el desplegable tras cada respuesta del HTMX del buscador.
+  form.addEventListener('htmx:afterRequest', function () {
+    if (input.value.trim() && box.innerHTML.trim()) {
+      box.style.display = 'block';
+    } else {
+      ocultar();
+    }
+  });
+  input.addEventListener('input', function () {
+    if (!input.value.trim()) ocultar();
+  });
+  // Enter: redirige a la pagina /buscar con la query (el form es el fallback).
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    navegar(input.value);
+    ocultar();
+  });
+  box.style.cssText = 'display:none;';
+})();
+</script>
+
+<style>
+  #resultados-header {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    margin-top: 6px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: rgba(18, 14, 12, 0.97);
+    border: 1px solid var(--borde, #3f3a34);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  }
+  #resultados-header .grid {
+    padding: 6px;
+  }
+  #resultados-header a {
+    background: rgba(245, 213, 118, 0.04);
+  }
+</style>
 </body>
 </html>

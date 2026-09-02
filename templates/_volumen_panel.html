@@ -4,44 +4,43 @@
 
 {% for seccion in volumen %}
 <div class="bg-panel border border-borde rounded-xl overflow-x-auto mt-4">
-  <div class="flex items-center gap-2 px-4 py-3 border-b border-borde">
-    <span>📊</span>
+  <div class="flex items-center gap-2 px-2 py-2 border-b border-borde">
+    <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#f5d576" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 17v-5M12 17V8M16 17v-3M20 17V6"/></svg>
     <h2 class="font-bold" style="color:#f5d576">Volumen 7 dias · {{ seccion.label }}</h2>
   </div>
-  <table class="w-full text-sm">
+  <table class="w-full text-sm fila-hover">
     <thead>
       <tr class="text-left text-zinc-400 border-b border-borde">
-        <th class="px-4 py-2.5">Ciudad</th>
-        <th class="px-4 py-2.5 text-right">Volumen</th>
-        <th class="px-4 py-2.5 text-right">Promedio</th>
-        <th class="px-4 py-2.5 text-right hidden sm:table-cell">Rango</th>
-        <th class="px-4 py-2.5 text-right">Cambio</th>
+        <th scope="col" class="px-2 py-2">Ciudad</th>
+        <th scope="col" class="px-2 py-2 text-right">Volumen</th>
+        <th scope="col" class="px-2 py-2 text-right">Promedio</th>
+        <th scope="col" class="px-2 py-2 text-right">Rango</th>
+        <th scope="col" class="px-2 py-2 text-right">Cambio</th>
       </tr>
     </thead>
     <tbody>
       {% for f in seccion.filas %}
       <tr class="border-b border-borde/50">
-        <td class="px-4 py-2">{{ f.ciudad }}</td>
-        <td class="px-4 py-2 text-right">{{ "{:,}".format(f.volumen) }}</td>
-        <td class="px-4 py-2 text-right">${{ "{:,}".format(f.promedio) }}</td>
-        <td class="px-4 py-2 text-right text-zinc-500 hidden sm:table-cell">
+        <th scope="row" class="px-2 py-2 text-left">{{ f.ciudad }}</th>
+        <td class="px-2 py-2 text-right">{{ "{:,}".format(f.volumen) }}</td>
+        <td class="px-2 py-2 text-right">${{ "{:,}".format(f.promedio) }}</td>
+        <td class="px-2 py-2 text-right texto-atenuado">
           ${{ "{:,}".format(f.rango_min) }} – ${{ "{:,}".format(f.rango_max) }}
         </td>
-        <td class="px-4 py-2 text-right font-semibold">
+        <td class="px-2 py-2 text-right font-semibold">
           {% if f.cambio_pct is none %}—{% else %}
-          <span style="color:{{ '#2ecc71' if f.cambio_pct >= 0 else '#e74c3c' }}">
-            {{ '+' if f.cambio_pct >= 0 }}{{ "%.1f"|format(f.cambio_pct) }}%
-          </span>
+          <span class="{% if f.cambio_pct >= 0 %}ok{% else %}peligro{% endif %}">{% if f.cambio_pct >= 0 %}▲{% else %}▼{% endif %}
+            {{ '+' if f.cambio_pct >= 0 }}{{ "%.1f"|format(f.cambio_pct) }}%</span>
           {% endif %}
         </td>
       </tr>
       {% endfor %}
       <tr class="bg-white/5">
-        <td class="px-4 py-2 font-bold">Total</td>
-        <td class="px-4 py-2 text-right font-bold">{{ "{:,}".format(seccion.total.volumen) }}</td>
-        <td class="px-4 py-2 text-right font-bold">${{ "{:,}".format(seccion.total.promedio) }}</td>
-        <td class="px-4 py-2 hidden sm:table-cell"></td>
-        <td class="px-4 py-2"></td>
+        <td class="px-2 py-2 font-bold">Total</td>
+        <td class="px-2 py-2 text-right font-bold">{{ "{:,}".format(seccion.total.volumen) }}</td>
+        <td class="px-2 py-2 text-right font-bold">${{ "{:,}".format(seccion.total.promedio) }}</td>
+        <td class="px-2 py-2"></td>
+        <td class="px-2 py-2"></td>
       </tr>
     </tbody>
   </table>

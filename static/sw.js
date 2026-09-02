@@ -1,5 +1,5 @@
 const CACHE = 'albion-helper-v1';
-const URLS = ['/', '/manifest.json', '/config', '/pesca', '/recursos/fibra', '/salsas', '/buscar'];
+const URLS = ['/', '/manifest.json', '/config', '/pesca', '/recursos', '/salsas', '/buscar'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

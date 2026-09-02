@@ -43,10 +43,12 @@ CONFIG_URL = f"http://127.0.0.1:{PORT}/config"
 QR_SOLO_URL = f"http://127.0.0.1:{PORT}/qr-solo"
 
 # Estado global compartido entre el hilo del webview, el de la bandeja y el main.
-_window = None                # ventana webview principal (launcher / app / config)
+_window = None                # ventana launcher (pantalla de entrada)
 _qr_window = None             # ventana de solo-QR (creada oculta desde el inicio)
+_app_window = None            # ventana de la APP (inicio maximizado, pre-cargada oculta desde el arranque)
 _tray = None                  # icono pystray
 _cerrar_programatico = False  # True = el cierre lo dispara el código (no preguntar)
+_ventana_cierre = None        # ventana que pidió cerrar por la X (para el modal)
 _relevo_hecho = False         # True = la ventana principal ya se mostró tras cargar
 
 _MUTEX = "AlbionHelper_InstanciaUnica"
@@ -239,43 +241,48 @@ def _apagar_todo():
 def _on_closing(window=None):
     """Se dispara al apretar la X de la ventana (evento cancelable).
 
-    Devuelve False para CANCELAR el cierre; None/True lo permite.
+    No cierra: cancela el cierre y muestra el MODAL Albion Glass
+    (parte del tema) en la propia ventana via evaluate_js. La decisión
+    la toma el usuario en JS y vuelve por opcion_cierre(). Antes era
+    un MessageBoxW de Windows (gris, ilegible de Enter a ciegas).
+
+    evaluate_js corre en un hilo daemon para evitar deadlock con el
+    syncContext de WebView2 (el handler closing corre en el GUI thread
+    y evaluate_js bloquea esperando el resultado del JS).
     """
-    global _cerrar_programatico
+    global _cerrar_programatico, _ventana_cierre
     if _cerrar_programatico:
         return  # cierre disparado por el código: permitir sin preguntar
+    _ventana_cierre = window
+    if window is not None:
+        threading.Thread(
+            target=lambda: window.evaluate_js(
+                "window.__mostrarModalCierre && window.__mostrarModalCierre()"
+            ),
+            daemon=True,
+        ).start()
+    return False  # cancela el cierre: la ventana queda viva mostrando el modal
 
-    MB_YESNOCANCEL = 0x00000003
-    MB_ICONQUESTION = 0x00000020
-    MB_DEFBUTTON3 = 0x00001000
-    MB_SETFOREGROUND = 0x00010000
-    res = ctypes.windll.user32.MessageBoxW(
-        0,
-        "¿Qué querés hacer?\n\n"
-        "Sí      -> Cerrar por completo (apaga el servidor)\n"
-        "No      -> Minimizar a la bandeja (el servidor sigue activo)\n"
-        "Cancelar -> Seguir con la ventana",
-        "Albion Helper",
-        MB_YESNOCANCEL | MB_ICONQUESTION | MB_DEFBUTTON3 | MB_SETFOREGROUND,
-    )
-    IDYES = 6
-    IDNO = 7
-    if res == IDYES:
-        # Cerrar por completo: hay que destruir AMBAS ventanas (principal y QR)
+
+def _on_opcion_cierre(opcion):
+    """Resuelve la elección del modal de cierre (llamado desde JS)."""
+    global _cerrar_programatico
+    if opcion == "cerrar":
+        # Cerrar por completo: destruir AMBAS ventanas (principal y QR)
         # para que webview.start() retorne y main() apague el server.
         _cerrar_programatico = True
-        if _qr_window is not None:
-            try:
-                _qr_window.destroy()
-            except Exception:
-                pass
-        return  # permite el cierre -> webview.start() retorna -> apaga todo
-    if res == IDNO:
+        for w in (_qr_window, _window, _app_window):
+            if w is not None:
+                try:
+                    w.destroy()
+                except Exception:
+                    pass
+        return
+    if opcion == "minimizar":
         _crear_bandeja()
-        # Ocultar la ventana DESPUÉS de que el handler termine (estamos en el hilo GUI).
-        threading.Timer(0.3, lambda: _window.hide() if _window else None).start()
-        return False  # cancela el cierre: la ventana no se destruye, queda viva
-    return False  # Cancelar: sigue con la ventana
+        w = _ventana_cierre
+        # Ocultar la ventana DESPUÉS de que el handler termine (hilo GUI).
+        threading.Timer(0.3, lambda: w.hide() if w is not None else None).start()
 
 
 # ─── Bandeja ──────────────────────────────────────────────────
@@ -338,18 +345,16 @@ def _label_tunel(item=None):
 
 
 def _mostrar_ventana(url):
-    """Muestra (crea si hace falta) la ventana PRINCIPAL y carga la URL."""
-    global _window
-    try:
-        if _window is None:
-            _crear_ventana(url)
-            return
-        _window.show()
-        _window.restore()
-        _window.maximize()
-        _window.load_url(url)
-    except Exception:
-        pass
+    """Muestra la ventana de la APP (pre-cargada oculta desde el arranque).
+    El parámetro url se conserva por compatibilidad con la bandeja."""
+    w = _app_window
+    if w is not None:
+        try:
+            w.show()
+            w.restore()
+            w.maximize()  # reaplicar: el ciclo de creacion en oculto resetea el estado
+        except Exception:
+            pass
 
 
 def _mostrar_ventana_qr():
@@ -390,7 +395,7 @@ def _tray_tunel(icon=None, item=None):
 def _tray_salir(icon=None, item=None):
     global _cerrar_programatico
     _cerrar_programatico = True
-    for w in (_window, _qr_window):
+    for w in (_window, _qr_window, _app_window):
         if w is not None:
             try:
                 w.destroy()
@@ -413,11 +418,21 @@ class LauncherApi:
         _relevo_contenido()
 
     def abrir_app(self):
-        """Maximiza la ventana y carga la PWA completa."""
-        if _window is None:
-            return
-        _window.maximize()
-        _window.load_url(APP_URL)
+        """Mismo criterio que la opcion 2: oculta el launcher y revela la
+        ventana de la APP, pre-cargada oculta desde el arranque."""
+        if _window is not None:
+            try:
+                _window.hide()
+            except Exception:
+                pass
+        w = _app_window
+        if w is not None:
+            try:
+                w.show()
+                w.restore()
+                w.maximize()  # el ciclo Opacity/Show/Hide de la creacion resetea el estado: reaplicar
+            except Exception:
+                pass
 
     def solo_servidor(self):
         """Oculta la ventana principal, muestra la de SOLO QRs y queda en bandeja."""
@@ -433,6 +448,10 @@ class LauncherApi:
         """Abre la consola y CIERRA todo lo demás (server, ventanas, bandeja)."""
         _lanzar_consola()
         _tray_salir()
+
+    def opcion_cierre(self, opcion):
+        """El modal de cierre (HTML) devuelve la elección del usuario."""
+        _on_opcion_cierre(opcion)
 
 
 def _popen_consola(cmd):
@@ -533,12 +552,12 @@ def _crear_ventana(url=None):
 def _crear_ventana_qr():
     """Crea la ventana de SOLO QRs (oculta al inicio; se muestra con "Solo servidor")."""
     global _qr_window
-    xy_qr = _centrado_xy(460, 640)
+    xy_qr = _centrado_xy(460, 820)
     _qr_window = webview.create_window(
         "Albion Helper · QR",
         QR_SOLO_URL,
         width=460,
-        height=640,
+        height=820,
         x=xy_qr[0] if xy_qr else None,
         y=xy_qr[1] if xy_qr else None,
         resizable=True,
@@ -587,6 +606,25 @@ def _webview2_disponible():
 
 
 # ─── Modos ────────────────────────────────────────────────────
+def _crear_ventana_app():
+    """Ventana de la APP: oculta y maximizada, con el inicio pre-cargando
+    en segundo plano desde el arranque (mismo patron que la ventana de
+    QRs). Se revela con 'Abrir la app' (opcion 1 / bandeja)."""
+    global _app_window
+    _app_window = webview.create_window(
+        "Albion Helper",
+        APP_URL,
+        js_api=LauncherApi(),
+        maximized=True,
+        hidden=True,
+        resizable=True,
+        text_select=True,
+        background_color="#1a1410",
+    )
+    if _app_window is not None:
+        _app_window.events.closing += _on_closing
+
+
 def main():
     # 0) Una sola instancia: si ya hay otra, avisar y salir.
     if _instancia_duplicada():
@@ -639,10 +677,12 @@ def main():
         if "--server" in sys.argv:
             _crear_bandeja()
             _mostrar_ventana_qr()
+            _crear_ventana_app()
         else:
-            # 4) Ventana launcher (pregunta qué abrir) + ventana de QRs oculta
+            # 4) Ventana launcher + QRs oculta + APP pre-cargada oculta
             _crear_ventana()
             _crear_ventana_qr()
+            _crear_ventana_app()
 
         # 5) Event loop de webview (bloqueante). Retorna cuando TODAS las
         #    ventanas se cierran (la principal se oculta en "solo"/"consola",

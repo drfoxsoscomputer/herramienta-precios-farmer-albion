@@ -34,51 +34,105 @@
 
   <div class="w-full max-w-sm space-y-4">
 
+    <style>
+      /* Switch de túnel (mismo que config.html): el CSS compilado no
+         tiene las variantes peer:* / after:* que usaba el anterior. */
+      .switch-track {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        border-radius: 9999px;
+        background: #3a2a24;
+        transition: background .3s ease;
+        flex-shrink: 0;
+      }
+      .switch-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 9999px;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+        transition: transform .3s ease;
+      }
+      #tunel-switch:checked + .switch-track { background: #2f8f4e; }
+      #tunel-switch:checked + .switch-track .switch-thumb { transform: translateX(20px); }
+      #tunel-switch:focus-visible + .switch-track {
+        outline: 2px solid var(--oro-claro);
+        outline-offset: 2px;
+        border-radius: 9999px;
+      }
+      .switch-area { position: relative; display: inline-flex; align-items: center; min-height: 44px; }
+      .switch-area input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        inset: 0;
+        cursor: pointer;
+      }
+    </style>
+
     <div class="vidrio borde-metal-oro rounded-xl p-5 text-center">
       <div class="text-sm text-zinc-400 mb-2">ACCESO PRIVADO
-        <span class="text-zinc-500">(red local · LAN o WiFi)</span>
+        <span class="texto-atenuado">(red local · LAN o WiFi)</span>
       </div>
-      <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
-           class="qr-img w-40 h-40 mx-auto qr-placa"
-           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
-      <div class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
+      <div class="bg-black/40 rounded-lg px-3 py-2 font-mono text-xs mt-3 select-all break-all"
            style="color:#f5d576">{{ url_local }}</div>
+      <img src="/qr?url={{ url_local | urlencode }}" alt="QR local"
+           class="qr-img w-40 h-40 mx-auto qr-placa mt-3"
+           onload="this.dataset.cargado=1" onerror="this.style.display='none'">
     </div>
 
     <div class="vidrio borde-metal-oro rounded-xl p-5 text-center">
-      <div class="text-sm text-zinc-400 mb-4">ACCESO PÚBLICO
-        <span class="text-zinc-500">(desde internet)</span>
+      <div class="text-sm text-zinc-400 mb-2">ACCESO PÚBLICO
+        <span class="texto-atenuado">(desde internet)</span>
       </div>
 
-      <label class="flex items-center justify-between gap-3 mb-4 cursor-pointer select-none">
+      <label class="flex items-center justify-between gap-3 mb-3 cursor-pointer select-none">
         <span class="text-sm text-zinc-300">Acceso público
-          <span id="tunel-rotulo" class="block text-xs {% if tunel_url %}text-green-400{% else %}text-zinc-500{% endif %}">
+          <span id="tunel-rotulo" class="block text-xs {% if tunel_url %}ok{% else %}texto-atenuado{% endif %}">
             {% if tunel_url %}Disponible{% else %}No disponible{% endif %}
           </span>
         </span>
-        <input type="checkbox" id="tunel-switch" class="peer sr-only" {% if tunel_url %}checked{% endif %}>
-        <span class="relative w-11 h-6 rounded-full shrink-0 bg-zinc-600/80
-                     peer-checked:bg-green-500 transition-colors duration-300
-                     after:content-[''] after:absolute after:top-0.5 after:left-0.5
-                     after:w-5 after:h-5 after:bg-white after:rounded-full
-                     after:shadow-md after:transition-transform after:duration-300
-                     peer-checked:after:translate-x-5
-                     peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400/70"></span>
+        <span class="switch-area">
+          <input type="checkbox" id="tunel-switch" {% if tunel_url %}checked{% endif %}>
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </span>
       </label>
 
-      <div id="url-skeleton" class="mb-4 space-y-2" style="display:none">
+      <div id="url-skeleton" class="mb-3 space-y-2" style="display:none">
         <div class="h-8 bg-zinc-700/60 rounded-lg animate-pulse"></div>
-        <div class="h-36 bg-zinc-700/40 rounded-lg animate-pulse"></div>
+        <div class="h-40 bg-zinc-700/40 rounded-lg animate-pulse"></div>
       </div>
 
       <div id="url-publica"
-           class="bg-black/40 rounded-lg px-3 py-1.5 font-mono text-xs mt-3 select-all break-all"
-           style="color:#f5d576">{{ tunel_url or "No disponible" }}</div>
+           class="bg-black/40 rounded-lg px-3 py-2 font-mono text-xs mt-3 select-all break-all"
+           style="color:#f5d576{% if not tunel_url %};display:none{% endif %}">{{ tunel_url or "No disponible" }}</div>
 
       <img src="/qr?url={{ tunel_url | urlencode }}" alt="QR internet"
            id="qr-publica"
            class="qr-img w-40 h-40 mx-auto qr-placa mt-3"
+           {% if not tunel_url %}style="display:none"{% endif %}
            onload="this.dataset.cargado=1" onerror="this.style.display='none'">
+
+      <div id="tunel-vacio" class="mt-3"
+           {% if tunel_url %}style="display:none"{% endif %}>
+        <div class="w-40 h-40 mx-auto texto-atenuado"
+             style="border:2px dashed rgba(161,161,170,.7); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; box-sizing:border-box">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="10" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span class="px-2 text-center" style="font-size:11px; line-height:1.3">Active el acceso público para generar el QR</span>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -121,6 +175,8 @@ function set_cargando(estado) {
   const qr = document.getElementById('qr-publica');
   if (sw) sw.disabled = estado;
   if (estado) {
+    const vacio = document.getElementById('tunel-vacio');
+    if (vacio) vacio.style.display = 'none';
     if (skel) skel.style.display = '';
     if (el) el.style.display = 'none';
     if (qr) qr.style.display = 'none';
@@ -130,7 +186,7 @@ function set_cargando(estado) {
     }
   } else {
     if (skel) skel.style.display = 'none';
-    if (el) el.style.display = '';
+    actualizar_tunel(url_actual);
   }
 }
 
@@ -145,20 +201,23 @@ function actualizar_tunel(url) {
   if (sw) sw.checked = activo;
   if (rot) {
     rot.textContent = activo ? 'Disponible' : 'No disponible';
-    rot.className = 'block text-xs ' + (activo ? 'text-green-400' : 'text-zinc-500');
+    rot.className = 'block text-xs ' + (activo ? 'ok' : 'texto-atenuado');
   }
   if (cab) {
     cab.textContent = activo ? '· Disponible' : '· No disponible';
-    cab.className = 'text-xs ' + (activo ? 'text-green-400' : 'text-zinc-500');
+    cab.className = 'text-xs ' + (activo ? 'ok' : 'texto-atenuado');
   }
+  const vacio = document.getElementById('tunel-vacio');
   if (activo) {
     el.textContent = url;
     el.style.display = '';
     qr.src = '/qr?url=' + encodeURIComponent(url);
     qr.style.display = '';
+    if (vacio) vacio.style.display = 'none';
   } else {
-    el.textContent = 'No disponible';
+    el.style.display = 'none';
     qr.style.display = 'none';
+    if (vacio) vacio.style.display = '';
   }
 }
 
@@ -172,12 +231,20 @@ function bind_acciones() {
         const r = await fetch('/tunel/start', {method: 'POST'});
         const d = await r.json();
         actualizar_tunel(d.status === 'ok' ? d.url : '');
+        if (d.status === 'ok') {
+          if (window.toast) window.toast.ok('Acceso publico disponible: ' + d.url);
+        } else {
+          if (window.toast) window.toast.error(d.msg || 'No se pudo activar el acceso publico');
+        }
       } else {
-        await fetch('/tunel/stop', {method: 'POST'});
+        const r = await fetch('/tunel/stop', {method: 'POST'});
+        const d = await r.json();
         actualizar_tunel('');
+        if (window.toast) window.toast.info(d.status === 'ok' ? 'Acceso publico desactivado' : (d.msg || 'No se pudo desactivar el acceso publico'));
       }
     } catch (err) {
       actualizar_tunel('');
+      if (window.toast) window.toast.error('No se pudo conectar con el servidor');
     } finally {
       set_cargando(false);
     }
@@ -193,9 +260,14 @@ async function poll_status() {
   } catch (err) { /* server caido: ignorar */ }
 }
 
-document.addEventListener('DOMContentLoaded', bind_acciones);
+document.addEventListener('DOMContentLoaded', function () {
+  bind_acciones();
+  actualizar_tunel(url_actual);
+});
 setInterval(poll_status, 5000);
 </script>
+
+{% include "_toast.html" %}
 
 </body>
 </html>

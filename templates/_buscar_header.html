@@ -1,0 +1,20 @@
+{# Fragmento HTMX compacto para el desplegable del buscador del header. #}
+
+{% if not q %}
+<div class="text-zinc-500 text-center py-6">Escribe un termino para buscar...</div>
+{% elif not items %}
+<div class="text-zinc-500 text-center py-6">Sin resultados para tu consulta.</div>
+{% else %}
+<div class="text-xs text-zinc-500 px-2 pt-2">{{ items|length }} resultado(s)</div>
+<div>
+  {% for i in items[:8] %}
+  <a href="/buscar/item/{{ i.id_base | urlencode }}"
+     class="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 transition-colors">
+    <img src="{{ i.icono }}" alt="" class="w-5 h-5 object-contain shrink-0"
+         onerror="this.style.display='none'">
+    <span class="min-w-0 flex-1 truncate text-sm" style="color:{{ i.color }}">{{ i.nombre }}</span>
+    <span class="text-xs texto-atenuado shrink-0">T{{ i.tier }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}

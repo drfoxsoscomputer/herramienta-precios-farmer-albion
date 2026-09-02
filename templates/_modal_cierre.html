@@ -1,0 +1,154 @@
+<!-- ─── Modal de cierre Albion Glass (tarea 6/9) ────────────────
+     Reemplaza el MessageBoxW de Windows por un recuadro que es parte
+     del tema (vidrio + borde metal oro). Lo dispara Python con
+     window.__mostrarModalCierre() cuando el usuario aprieta la X;
+     la decisión vuelve por pywebview.api.opcion_cierre(opcion). -->
+<div id="modal-cierre" class="modal-cierre" role="dialog" aria-modal="true" aria-labelledby="modal-cierre-titulo" hidden>
+  <div class="modal-cierre-fondo"></div>
+  <div class="modal-cierre-panel vidrio borde-metal-oro rounded-xl p-6" role="document">
+    <div class="flex items-start justify-between gap-3 mb-1">
+      <h2 id="modal-cierre-titulo" class="text-lg font-bold titulo-oro" style="font-family:'Cinzel',Georgia,serif">Cerrar Albion Helper</h2>
+      <button type="button" class="btn-cierre-x" aria-label="Seguir en la ventana" onclick="__elegirCierre('cancelar')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>
+        </svg>
+      </button>
+    </div>
+    <p class="modal-cierre-texto mb-4">¿Qué querés hacer con la ventana?</p>
+    <div class="modal-cierre-opciones">
+      <button type="button" class="modal-cierre-btn modal-cierre-btn-peligro"
+              data-opcion="cerrar" onclick="__elegirCierre('cerrar')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+        <span class="flex-1">
+          <span class="block font-bold">Cerrar por completo</span>
+          <span class="modal-cierre-detalle">Apaga el servidor y sale</span>
+        </span>
+      </button>
+      <button type="button" class="modal-cierre-btn modal-cierre-btn-seguro"
+              data-opcion="minimizar" onclick="__elegirCierre('minimizar')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <line x1="6" y1="18" x2="18" y2="6"/><line x1="8" y1="18" x2="18" y2="18" transform="rotate(180 13 18)"/>
+          <path d="M5 12h14M12 5v14"/>
+        </svg>
+        <span class="flex-1">
+          <span class="block font-bold">Minimizar a la bandeja</span>
+          <span class="modal-cierre-detalle">El servidor sigue activo</span>
+        </span>
+      </button>
+      <button type="button" class="modal-cierre-btn"
+              data-opcion="cancelar" onclick="__elegirCierre('cancelar')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span class="flex-1">
+          <span class="block font-bold">Seguir en la ventana</span>
+          <span class="modal-cierre-detalle">Cancelar y volver</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-cierre {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-cierre[hidden] { display: none; }
+  .modal-cierre-fondo {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 8, 6, .55);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .modal-cierre-panel {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    animation: modal-cierre-entrar .18s ease-out;
+  }
+  @keyframes modal-cierre-entrar {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-cierre-texto { color: var(--texto-suave); font-size: 14px; }
+  .modal-cierre-opciones { display: flex; flex-direction: column; gap: 8px; }
+  .modal-cierre-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--texto-suave);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  }
+  .modal-cierre-btn:hover { background: rgba(255, 255, 255, .08); }
+  .modal-cierre-btn:active { transform: translateY(1px); }
+  .modal-cierre-btn svg { flex-shrink: 0; opacity: .85; }
+  .modal-cierre-btn .modal-cierre-detalle { font-size: 12px; opacity: .75; }
+  .modal-cierre-btn-seguro { border-color: rgba(201, 162, 86, .45); color: var(--oro-claro); }
+  .modal-cierre-btn-seguro:hover { background: rgba(201, 162, 86, .12); }
+  .modal-cierre-btn-peligro { border-color: rgba(212, 138, 122, .45); color: var(--peligro); }
+  .modal-cierre-btn-peligro:hover { background: rgba(212, 138, 122, .12); }
+  .modal-cierre-btn:focus-visible { outline: 2px solid var(--oro-claro); outline-offset: 2px; }
+  .btn-cierre-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: var(--texto-suave);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    transition: background .15s ease, color .15s ease;
+  }
+  .btn-cierre-x:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+  .btn-cierre-x:focus-visible { outline: 2px solid var(--oro-claro); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-cierre-panel { animation: none; }
+  }
+</style>
+
+<script>
+function __elegirCierre(opcion) {
+  var m = document.getElementById('modal-cierre');
+  if (m) m.hidden = true;
+  try {
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.opcion_cierre) {
+      window.pywebview.api.opcion_cierre(opcion);
+    }
+  } catch (e) {}
+}
+window.__mostrarModalCierre = function () {
+  var m = document.getElementById('modal-cierre');
+  if (!m) return;
+  m.hidden = false;
+  var seguro = m.querySelector('.modal-cierre-btn-seguro');
+  if (seguro) seguro.focus();
+};
+document.addEventListener('keydown', function (e) {
+  var m = document.getElementById('modal-cierre');
+  if (!m || m.hidden) return;
+  if (e.key === 'Escape') { __elegirCierre('cancelar'); e.preventDefault(); }
+});
+</script>

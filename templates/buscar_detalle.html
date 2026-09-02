@@ -3,7 +3,7 @@
 {% block contenido %}
 
 <div class="flex items-center gap-3 mb-2">
-  <a href="/buscar" class="text-zinc-400 hover:text-white transition-colors">← Volver a buscar</a>
+  <a href="/buscar" class="text-zinc-400 hover:text-white transition-colors">← Volver a Buscar</a>
 </div>
 
 <div class="flex items-center gap-3">
@@ -24,21 +24,20 @@
   <div class="font-bold mb-2" style="color:#f5d576">{{ panel.etiqueta }}</div>
   {% endif %}
   <div class="bg-panel border border-borde rounded-xl overflow-x-auto">
-    <table class="w-full text-sm">
+    <table class="w-full text-sm fila-hover">
       <thead>
         <tr class="text-left text-zinc-400 border-b border-borde">
           {% for h in panel.headers %}
-          <th class="px-4 py-3 {% if not loop.first %}text-right{% endif %} {% if h == 'Actualizado' %}text-zinc-600{% endif %}">{{ h }}</th>
+          <th scope="col" class="px-2 py-2 {% if not loop.first %}text-right{% endif %} {% if h == 'Actualizado' %}texto-atenuado{% endif %}">{{ h }}</th>
           {% endfor %}
         </tr>
       </thead>
       <tbody>
         {% for f in panel.filas %}
         <tr class="border-b border-borde/50">
-          <td class="px-4 py-2.5">{{ f.ciudad }}</td>
+          <th scope="row" class="px-2 py-2 text-left">{{ f.ciudad }}</th>
           {% for c in f.celdas %}
-          <td class="px-4 py-2.5 {% if c.es_fresca %}text-right text-zinc-600{% else %}text-right font-semibold{% endif %}"
-              {% if c.color %}style="color:{{ c.color }}"{% endif %}>{{ c.txt }}</td>
+          <td class="px-2 py-2 {% if c.es_fresca %}text-right texto-atenuado{% else %}text-right{% if c.color == 'red' %} ok{% elif c.color == 'green' %} peligro{% endif %}{% endif %}">{{ c.txt }}</td>
           {% endfor %}
         </tr>
         {% endfor %}

@@ -2,26 +2,24 @@
    Se incluye en pesca_detalle.html y se refresca solo via hx-trigger. #}
 
 <div class="bg-panel border border-borde rounded-xl overflow-x-auto">
-  <table class="w-full text-sm">
+  <table class="w-full text-sm fila-hover">
     <thead>
       <tr class="text-left text-zinc-400 border-b border-borde">
-        <th class="px-4 py-3">Ciudad</th>
-        <th class="px-4 py-3 text-right">Entero</th>
-        <th class="px-4 py-3 text-right text-zinc-600">Actualizado</th>
-        <th class="px-4 py-3 text-right">Picado</th>
-        <th class="px-4 py-3 text-right text-zinc-600">Actualizado</th>
+        <th scope="col" class="px-2 py-2">Ciudad</th>
+        <th scope="col" class="px-2 py-2 text-right">Entero</th>
+        <th scope="col" class="px-2 py-2 text-right texto-atenuado">Actualizado</th>
+        <th scope="col" class="px-2 py-2 text-right">Picado</th>
+        <th scope="col" class="px-2 py-2 text-right texto-atenuado">Actualizado</th>
       </tr>
     </thead>
     <tbody>
       {% for f in datos.filas %}
       <tr class="border-b border-borde/50">
-        <td class="px-4 py-2.5">{{ f.ciudad }}</td>
-        <td class="px-4 py-2.5 text-right font-semibold"
-            {% if f.entero_color %}style="color:{{ f.entero_color }}"{% endif %}>{{ f.entero_txt }}</td>
-        <td class="px-4 py-2.5 text-right text-zinc-600">{{ f.fresca_entero }}</td>
-        <td class="px-4 py-2.5 text-right font-semibold"
-            {% if f.picado_color %}style="color:{{ f.picado_color }}"{% endif %}>{{ f.picado_txt }}</td>
-        <td class="px-4 py-2.5 text-right text-zinc-600">{{ f.fresca_picado }}</td>
+        <th scope="row" class="px-2 py-2 text-left">{{ f.ciudad }}</th>
+        <td class="px-2 py-2 text-right{% if f.entero_color == 'red' %} ok{% elif f.entero_color == 'green' %} peligro{% endif %}">{{ f.entero_txt }}</td>
+        <td class="px-2 py-2 text-right texto-atenuado">{{ f.fresca_entero }}</td>
+        <td class="px-2 py-2 text-right{% if f.picado_color == 'red' %} ok{% elif f.picado_color == 'green' %} peligro{% endif %}">{{ f.picado_txt }}</td>
+        <td class="px-2 py-2 text-right texto-atenuado">{{ f.fresca_picado }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -35,21 +33,21 @@
 
 <div class="bg-panel border border-borde rounded-xl p-4 mt-4">
   <div class="flex items-center gap-2 mb-3">
-    <span>📈</span>
+    <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="#f5d576" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7V3h-4"/></svg>
     <h2 class="font-bold" style="color:#f5d576">Resumen de mercado</h2>
   </div>
   {% set r = datos.resumen %}
   {% if r.sin_datos %}
-  <div class="text-zinc-500">Sin datos de venta</div>
+  <div class="texto-atenuado">Sin datos de venta</div>
   {% else %}
-  <div class="font-semibold" style="color:#2ecc71">
+  <div class="font-semibold ok">
     Venta min: ${{ "{:,}".format(r.min_venta) }}{% if r.min_ciudad %} ({{ r.min_ciudad }}){% endif %}
   </div>
-  <div class="font-semibold mt-1" style="color:#e74c3c">
+  <div class="font-semibold mt-1 peligro">
     Venta max: ${{ "{:,}".format(r.max_venta) }}{% if r.max_ciudad %} ({{ r.max_ciudad }}){% endif %}
   </div>
   {% endif %}
   {% if datos.uso %}
-  <div class="text-zinc-500 text-sm mt-2">Se usa en: {{ datos.uso }}</div>
+  <div class="texto-atenuado text-sm mt-2">Se usa en: {{ datos.uso }}</div>
   {% endif %}
 </div>
